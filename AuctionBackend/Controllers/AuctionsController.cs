@@ -141,5 +141,52 @@ namespace AuctionBackend.Controllers
                 UserId = auction.UserId
             });
         }
+
+        [Authorize]
+        [HttpPut("{id:int}")]
+        public async Task<ActionResult<AuctionResponseDto>> Update(int id, UpdateAuctionDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Title) || dto.StartingPrice <= 0 || dto.EndsAt <= DateTime.UtcNow)
+            {
+                return BadRequest("Title, starting price, and a future end date are required.");
+            }
+
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue(ClaimTypes.Name);
+            if (string.IsNullOrWhiteSpace(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized();
+            }
+
+            var auction = await _dbContext.Auctions.FirstOrDefaultAsync(a => a.Id == id);
+            if (auction == null)
+            {
+                return NotFound();
+            }
+
+            if (auction.UserId != userId)
+            {
+                return Forbid();
+            }
+
+            auction.Title = dto.Title;
+            auction.Description = dto.Description;
+            auction.StartingPrice = dto.StartingPrice;
+            auction.EndsAt = dto.EndsAt;
+            auction.IsActive = dto.IsActive;
+
+            await _dbContext.SaveChangesAsync();
+
+            return Ok(new AuctionResponseDto
+            {
+                Id = auction.Id,
+                Title = auction.Title,
+                Description = auction.Description,
+                StartingPrice = auction.StartingPrice,
+                CurrentPrice = auction.CurrentPrice,
+                EndsAt = auction.EndsAt,
+                IsActive = auction.IsActive,
+                UserId = auction.UserId
+            });
+        }
     }
 }
