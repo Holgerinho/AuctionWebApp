@@ -1,3 +1,16 @@
 <Solution>
+  <Folder Name="/Frontend/">
+    <File Path="AuctionFrontend/.env" />
+    <File Path="AuctionFrontend/.gitignore" />
+    <File Path="AuctionFrontend/eslint.config.js" />
+    <File Path="AuctionFrontend/index.html" />
+    <File Path="AuctionFrontend/package-lock.json" />
+    <File Path="AuctionFrontend/package.json" />
+    <File Path="AuctionFrontend/README.md" />
+    <File Path="AuctionFrontend/tsconfig.app.json" />
+    <File Path="AuctionFrontend/tsconfig.json" />
+    <File Path="AuctionFrontend/tsconfig.node.json" />
+    <File Path="AuctionFrontend/vite.config.ts" />
+  </Folder>
   <Project Path="AuctionBackend/AuctionBackend.csproj" />
 </Solution>

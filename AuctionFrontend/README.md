@@ -2,6 +2,16 @@
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
+## Environment variables
+
+Create a `.env` file in the `AuctionFrontend` folder with:
+
+```
+VITE_API_BASE_URL=https://localhost:7162
+```
+
+This should match the backend URL from `AuctionBackend/Properties/launchSettings.json`.
+
 Currently, two official plugins are available:
 
 - [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
