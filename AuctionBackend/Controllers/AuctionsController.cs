@@ -188,5 +188,94 @@ namespace AuctionBackend.Controllers
                 UserId = auction.UserId
             });
         }
+
+        [HttpGet("{auctionId:int}/bids")]
+        public async Task<ActionResult<IEnumerable<BidResponseDto>>> GetBids(int auctionId)
+        {
+            var auctionExists = await _dbContext.Auctions.AnyAsync(a => a.Id == auctionId);
+            if (!auctionExists)
+            {
+                return NotFound("Auction not found.");
+            }
+
+            var query = _dbContext.Bids
+                .Where(b => b.AuctionId == auctionId)
+                .OrderByDescending(b => b.Amount)
+                .Select(b => new BidResponseDto
+                {
+                    Id = b.Id,
+                    Amount = b.Amount,
+                    CreatedAt = b.CreatedAt,
+                    UserId = b.UserId,
+                    AuctionId = b.AuctionId
+                });
+
+            var bids = await EntityFrameworkQueryableExtensions.ToListAsync(query);
+            return Ok(bids);
+        }
+
+        [Authorize]
+        [HttpPost("{auctionId:int}/bids")]
+        public async Task<ActionResult<BidResponseDto>> CreateBid(int auctionId, CreateBidDto dto)
+        {
+            if (dto.Amount <= 0)
+            {
+                return BadRequest("Bid amount must be greater than zero.");
+            }
+
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue(ClaimTypes.Name);
+            if (string.IsNullOrWhiteSpace(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized();
+            }
+
+            var auction = await _dbContext.Auctions
+                .Include(a => a.Bids)
+                .FirstOrDefaultAsync(a => a.Id == auctionId);
+
+            if (auction == null)
+            {
+                return NotFound("Auction not found.");
+            }
+
+            if (!auction.IsActive || auction.EndsAt <= DateTime.UtcNow)
+            {
+                return BadRequest("Auction is closed.");
+            }
+
+            if (auction.UserId == userId)
+            {
+                return BadRequest("You cannot bid on your own auction.");
+            }
+
+            var currentHighest = auction.Bids.Count == 0
+                ? auction.StartingPrice
+                : auction.Bids.Max(b => b.Amount);
+
+            if (dto.Amount <= currentHighest)
+            {
+                return BadRequest("Bid must be higher than the current highest bid.");
+            }
+
+            var bid = new Bid
+            {
+                Amount = dto.Amount,
+                AuctionId = auctionId,
+                UserId = userId
+            };
+
+            auction.CurrentPrice = dto.Amount;
+            _dbContext.Bids.Add(bid);
+            await _dbContext.SaveChangesAsync();
+
+            return Ok(new BidResponseDto
+            {
+                Id = bid.Id,
+                Amount = bid.Amount,
+                CreatedAt = bid.CreatedAt,
+                UserId = bid.UserId,
+                AuctionId = bid.AuctionId
+            });
+        }
     }
 }
