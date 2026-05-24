@@ -28,6 +28,18 @@ namespace AuctionBackend.Data
             modelBuilder.Entity<Bid>()
                 .Property(b => b.Amount)
                 .HasPrecision(18, 2);
+
+            modelBuilder.Entity<Auction>()
+                .HasOne(a => a.User)
+                .WithMany(u => u.Auctions)
+                .HasForeignKey(a => a.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Bid>()
+                .HasOne(b => b.User)
+                .WithMany(u => u.Bids)
+                .HasForeignKey(b => b.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

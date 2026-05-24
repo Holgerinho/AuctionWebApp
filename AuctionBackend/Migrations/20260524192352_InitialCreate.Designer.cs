@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AuctionBackend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260524184402_InitialCreate")]
+    [Migration("20260524192352_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -128,7 +128,7 @@ namespace AuctionBackend.Migrations
                     b.HasOne("AuctionBackend.Models.User", "User")
                         .WithMany("Auctions")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("User");
@@ -145,7 +145,7 @@ namespace AuctionBackend.Migrations
                     b.HasOne("AuctionBackend.Models.User", "User")
                         .WithMany("Bids")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Auction");
