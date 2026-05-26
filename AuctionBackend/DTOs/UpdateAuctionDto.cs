@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace AuctionBackend.DTOs
 {
@@ -10,5 +11,6 @@ namespace AuctionBackend.DTOs
         public DateTime StartsAt { get; set; }
         public DateTime EndsAt { get; set; }
         public bool IsActive { get; set; }
+        public List<string> ImageUrls { get; set; } = new();
     }
 }

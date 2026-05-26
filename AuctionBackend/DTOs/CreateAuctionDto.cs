@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace AuctionBackend.DTOs
 {
@@ -9,5 +10,6 @@ namespace AuctionBackend.DTOs
         public decimal StartingPrice { get; set; }
         public DateTime StartsAt { get; set; }
         public DateTime EndsAt { get; set; }
+        public List<string> ImageUrls { get; set; } = new();
     }
 }

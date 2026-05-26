@@ -57,6 +57,7 @@ namespace AuctionBackend.Controllers
                         .ThenByDescending(b => b.Id)
                         .Select(b => (int?)b.UserId)
                         .FirstOrDefault(),
+                    ImageUrls = a.Images.Select(i => i.Url).ToList(),
                     StartsAt = DateTime.SpecifyKind(a.StartsAt, DateTimeKind.Utc),
                     EndsAt = DateTime.SpecifyKind(a.EndsAt, DateTimeKind.Utc),
                     IsActive = a.IsActive,
@@ -96,6 +97,7 @@ namespace AuctionBackend.Controllers
                         .ThenByDescending(b => b.Id)
                         .Select(b => (int?)b.UserId)
                         .FirstOrDefault(),
+                    ImageUrls = a.Images.Select(i => i.Url).ToList(),
                     StartsAt = DateTime.SpecifyKind(a.StartsAt, DateTimeKind.Utc),
                     EndsAt = DateTime.SpecifyKind(a.EndsAt, DateTimeKind.Utc),
                     IsActive = a.IsActive,
@@ -133,6 +135,7 @@ namespace AuctionBackend.Controllers
                         .ThenByDescending(b => b.Id)
                         .Select(b => (int?)b.UserId)
                         .FirstOrDefault(),
+                    ImageUrls = a.Images.Select(i => i.Url).ToList(),
                     StartsAt = DateTime.SpecifyKind(a.StartsAt, DateTimeKind.Utc),
                     EndsAt = DateTime.SpecifyKind(a.EndsAt, DateTimeKind.Utc),
                     IsActive = a.IsActive,
@@ -169,6 +172,7 @@ namespace AuctionBackend.Controllers
                         .ThenByDescending(b => b.Id)
                         .Select(b => (int?)b.UserId)
                         .FirstOrDefault(),
+                    ImageUrls = a.Images.Select(i => i.Url).ToList(),
                     StartsAt = DateTime.SpecifyKind(a.StartsAt, DateTimeKind.Utc),
                     EndsAt = DateTime.SpecifyKind(a.EndsAt, DateTimeKind.Utc),
                     IsActive = a.IsActive,
@@ -206,6 +210,7 @@ namespace AuctionBackend.Controllers
                         .ThenByDescending(b => b.Id)
                         .Select(b => (int?)b.UserId)
                         .FirstOrDefault(),
+                    ImageUrls = a.Images.Select(i => i.Url).ToList(),
                     StartsAt = DateTime.SpecifyKind(a.StartsAt, DateTimeKind.Utc),
                     EndsAt = DateTime.SpecifyKind(a.EndsAt, DateTimeKind.Utc),
                     IsActive = a.IsActive,
@@ -235,6 +240,7 @@ namespace AuctionBackend.Controllers
                         .ThenByDescending(b => b.Id)
                         .Select(b => (int?)b.UserId)
                         .FirstOrDefault(),
+                    ImageUrls = a.Images.Select(i => i.Url).ToList(),
                     StartsAt = DateTime.SpecifyKind(a.StartsAt, DateTimeKind.Utc),
                     EndsAt = DateTime.SpecifyKind(a.EndsAt, DateTimeKind.Utc),
                     IsActive = a.IsActive,
@@ -282,7 +288,12 @@ namespace AuctionBackend.Controllers
                 CurrentPrice = dto.StartingPrice,
                 StartsAt = startsAtUtc,
                 EndsAt = endsAtUtc,
-                UserId = userId
+                UserId = userId,
+                Images = (dto.ImageUrls ?? new List<string>())
+                    .Where(url => !string.IsNullOrWhiteSpace(url))
+                    .Take(8)
+                    .Select(url => new AuctionImage { Url = url })
+                    .ToList()
             };
 
             _dbContext.Auctions.Add(auction);
@@ -296,6 +307,7 @@ namespace AuctionBackend.Controllers
                 StartingPrice = auction.StartingPrice,
                 CurrentPrice = auction.CurrentPrice,
                 CurrentHighestBidUserId = null,
+                ImageUrls = auction.Images.Select(i => i.Url).ToList(),
                 StartsAt = DateTime.SpecifyKind(auction.StartsAt, DateTimeKind.Utc),
                 EndsAt = DateTime.SpecifyKind(auction.EndsAt, DateTimeKind.Utc),
                 IsActive = auction.IsActive,
@@ -354,6 +366,18 @@ namespace AuctionBackend.Controllers
             auction.EndsAt = endsAtUtc;
             auction.IsActive = dto.IsActive;
 
+            var existingImages = await _dbContext.AuctionImages
+                .Where(i => i.AuctionId == auction.Id)
+                .ToListAsync();
+            _dbContext.AuctionImages.RemoveRange(existingImages);
+
+            var newImages = (dto.ImageUrls ?? new List<string>())
+                .Where(url => !string.IsNullOrWhiteSpace(url))
+                .Take(8)
+                .Select(url => new AuctionImage { AuctionId = auction.Id, Url = url })
+                .ToList();
+            _dbContext.AuctionImages.AddRange(newImages);
+
             await _dbContext.SaveChangesAsync();
 
             return Ok(new AuctionResponseDto
@@ -370,6 +394,10 @@ namespace AuctionBackend.Controllers
                     .ThenByDescending(b => b.Id)
                     .Select(b => (int?)b.UserId)
                     .FirstOrDefaultAsync(),
+                ImageUrls = await _dbContext.AuctionImages
+                    .Where(i => i.AuctionId == auction.Id)
+                    .Select(i => i.Url)
+                    .ToListAsync(),
                 StartsAt = DateTime.SpecifyKind(auction.StartsAt, DateTimeKind.Utc),
                 EndsAt = DateTime.SpecifyKind(auction.EndsAt, DateTimeKind.Utc),
                 IsActive = auction.IsActive,

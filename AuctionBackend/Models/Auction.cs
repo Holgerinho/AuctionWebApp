@@ -18,5 +18,6 @@ namespace AuctionBackend.Models
         public User User { get; set; } = null!;
 
         public ICollection<Bid> Bids { get; set; } = new List<Bid>();
+        public ICollection<AuctionImage> Images { get; set; } = new List<AuctionImage>();
     }
 }

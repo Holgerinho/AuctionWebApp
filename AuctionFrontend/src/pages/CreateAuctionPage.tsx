@@ -3,6 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import { createAuction } from '../api/auctionApi'
 import { useAuth } from '../context/AuthContext'
 
+async function readFileAsDataUrl(file: File): Promise<string> {
+	return new Promise((resolve, reject) => {
+		const reader = new FileReader()
+		reader.onload = () => resolve(String(reader.result ?? ''))
+		reader.onerror = () => reject(new Error('Could not read image file.'))
+		reader.readAsDataURL(file)
+	})
+}
+
 function CreateAuctionPage() {
 	const navigate = useNavigate()
 	const { token } = useAuth()
@@ -11,6 +20,7 @@ function CreateAuctionPage() {
 	const [startingPrice, setStartingPrice] = useState('')
 	const [startsAt, setStartsAt] = useState('')
 	const [endsAt, setEndsAt] = useState('')
+	const [imageUrls, setImageUrls] = useState<string[]>([])
 	const [isSubmitting, setIsSubmitting] = useState(false)
 	const [error, setError] = useState('')
 
@@ -52,6 +62,7 @@ function CreateAuctionPage() {
 					title,
 					description,
 					startingPrice: priceValue,
+					imageUrls,
 					startsAt: startsAtIso,
 					endsAt: endsAtIso,
 				},
@@ -63,6 +74,32 @@ function CreateAuctionPage() {
 		} finally {
 			setIsSubmitting(false)
 		}
+	}
+
+	const handleImageFilesSelected = async (
+		event: React.ChangeEvent<HTMLInputElement>,
+	) => {
+		const selectedFiles = Array.from(event.target.files ?? [])
+		if (selectedFiles.length === 0) {
+			return
+		}
+
+		try {
+			const encoded = await Promise.all(
+				selectedFiles
+					.filter((file) => file.type.startsWith('image/'))
+					.map((file) => readFileAsDataUrl(file)),
+			)
+			setImageUrls((prev) => [...prev, ...encoded].slice(0, 8))
+		} catch (err) {
+			setError(err instanceof Error ? err.message : 'Failed to load image files.')
+		} finally {
+			event.target.value = ''
+		}
+	}
+
+	const removeImage = (index: number) => {
+		setImageUrls((prev) => prev.filter((_, i) => i !== index))
 	}
 
 	return (
@@ -110,6 +147,31 @@ function CreateAuctionPage() {
 						onChange={(event) => setStartingPrice(event.target.value)}
 					/>
 				</label>
+				<label className="form-field">
+					<span>Images (up to 8)</span>
+					<input
+						type="file"
+						accept="image/*"
+						multiple
+						onChange={handleImageFilesSelected}
+					/>
+				</label>
+				{imageUrls.length > 0 ? (
+					<div className="image-preview-grid">
+						{imageUrls.map((url, index) => (
+							<div key={`${url}-${index}`} className="image-preview-item">
+								<img src={url} alt={`Auction upload ${index + 1}`} />
+								<button
+									type="button"
+									className="image-remove-button"
+									onClick={() => removeImage(index)}
+								>
+									Remove
+								</button>
+							</div>
+						))}
+					</div>
+				) : null}
 				<label className="form-field">
 					<span>Starts at</span>
 					<input

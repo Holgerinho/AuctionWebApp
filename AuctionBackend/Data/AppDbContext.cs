@@ -11,6 +11,7 @@ namespace AuctionBackend.Data
 
         public DbSet<User> Users { get; set; } = null!;
         public DbSet<Auction> Auctions { get; set; } = null!;
+        public DbSet<AuctionImage> AuctionImages { get; set; } = null!;
         public DbSet<Bid> Bids { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -40,6 +41,12 @@ namespace AuctionBackend.Data
                 .WithMany(u => u.Bids)
                 .HasForeignKey(b => b.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<AuctionImage>()
+                .HasOne(i => i.Auction)
+                .WithMany(a => a.Images)
+                .HasForeignKey(i => i.AuctionId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }
