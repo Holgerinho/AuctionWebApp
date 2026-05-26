@@ -51,7 +51,7 @@ namespace AuctionBackend.Controllers
                     Description = a.Description,
                     StartingPrice = a.StartingPrice,
                     CurrentPrice = a.CurrentPrice,
-                    EndsAt = a.EndsAt,
+                    EndsAt = DateTime.SpecifyKind(a.EndsAt, DateTimeKind.Utc),
                     IsActive = a.IsActive,
                     UserId = a.UserId
                 });
@@ -79,7 +79,7 @@ namespace AuctionBackend.Controllers
                     Description = a.Description,
                     StartingPrice = a.StartingPrice,
                     CurrentPrice = a.CurrentPrice,
-                    EndsAt = a.EndsAt,
+                    EndsAt = DateTime.SpecifyKind(a.EndsAt, DateTimeKind.Utc),
                     IsActive = a.IsActive,
                     UserId = a.UserId
                 });
@@ -109,7 +109,7 @@ namespace AuctionBackend.Controllers
                     Description = a.Description,
                     StartingPrice = a.StartingPrice,
                     CurrentPrice = a.CurrentPrice,
-                    EndsAt = a.EndsAt,
+                    EndsAt = DateTime.SpecifyKind(a.EndsAt, DateTimeKind.Utc),
                     IsActive = a.IsActive,
                     UserId = a.UserId
                 })
@@ -138,7 +138,7 @@ namespace AuctionBackend.Controllers
                     Description = a.Description,
                     StartingPrice = a.StartingPrice,
                     CurrentPrice = a.CurrentPrice,
-                    EndsAt = a.EndsAt,
+                    EndsAt = DateTime.SpecifyKind(a.EndsAt, DateTimeKind.Utc),
                     IsActive = a.IsActive,
                     UserId = a.UserId
                 });
@@ -160,7 +160,7 @@ namespace AuctionBackend.Controllers
                     Description = a.Description,
                     StartingPrice = a.StartingPrice,
                     CurrentPrice = a.CurrentPrice,
-                    EndsAt = a.EndsAt,
+                    EndsAt = DateTime.SpecifyKind(a.EndsAt, DateTimeKind.Utc),
                     IsActive = a.IsActive,
                     UserId = a.UserId
                 });
@@ -212,7 +212,7 @@ namespace AuctionBackend.Controllers
                 Description = auction.Description,
                 StartingPrice = auction.StartingPrice,
                 CurrentPrice = auction.CurrentPrice,
-                EndsAt = auction.EndsAt,
+                EndsAt = DateTime.SpecifyKind(auction.EndsAt, DateTimeKind.Utc),
                 IsActive = auction.IsActive,
                 UserId = auction.UserId
             });
@@ -261,7 +261,7 @@ namespace AuctionBackend.Controllers
                 Description = auction.Description,
                 StartingPrice = auction.StartingPrice,
                 CurrentPrice = auction.CurrentPrice,
-                EndsAt = auction.EndsAt,
+                EndsAt = DateTime.SpecifyKind(auction.EndsAt, DateTimeKind.Utc),
                 IsActive = auction.IsActive,
                 UserId = auction.UserId
             });
