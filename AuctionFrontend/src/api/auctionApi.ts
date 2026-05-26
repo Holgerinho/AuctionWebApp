@@ -9,6 +9,7 @@ type Auction = {
 	description: string
 	startingPrice: number
 	currentPrice: number | null
+	currentHighestBidUserId: number | null
 	startsAt: string
 	endsAt: string
 	isActive: boolean
@@ -86,6 +87,14 @@ async function getMyAuctions(token: string): Promise<Auction[]> {
 	})
 }
 
+async function getMyBidAuctions(token: string): Promise<Auction[]> {
+	return request<Auction[]>('/api/auctions/mine/bids', {
+		headers: {
+			Authorization: `Bearer ${token}`,
+		},
+	})
+}
+
 async function createAuction(
 	payload: CreateAuctionRequest,
 	token: string,
@@ -121,6 +130,7 @@ export {
 	getAuctionById,
 	getAuctions,
 	getBidsForAuction,
+	getMyBidAuctions,
 	getMyAuctions,
 	searchAuctions,
 	searchClosedAuctions,

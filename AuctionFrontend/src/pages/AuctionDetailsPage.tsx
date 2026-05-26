@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
 	getAuctionById,
 	getBidsForAuction,
@@ -12,6 +12,7 @@ import { useAuth } from '../context/AuthContext'
 function AuctionDetailsPage() {
 	const { id } = useParams()
 	const auctionId = Number(id)
+	const navigate = useNavigate()
 	const { isAuthenticated, token } = useAuth()
 	const [auction, setAuction] = useState<Auction | null>(null)
 	const [bids, setBids] = useState<Bid[]>([])
@@ -160,15 +161,34 @@ function AuctionDetailsPage() {
 		}
 	}
 
+	const handleBack = () => {
+		if (window.history.length > 1) {
+			navigate(-1)
+			return
+		}
+		navigate('/auctions')
+	}
+
 	return (
 		<section className="app-section app-section--wide">
 			<div className="detail-title-row">
 				<h1>{auction.title}</h1>
-				{isOwner ? (
-					<Link className="button-link" to={`/auctions/${auction.id}/edit`}>
-						Edit auction
-					</Link>
-				) : null}
+				<div className="detail-actions">
+					<button
+						type="button"
+						className="button-link button-link-icon"
+						onClick={handleBack}
+						aria-label="Go back"
+						title="Go back"
+					>
+						<span className="back-arrow" aria-hidden="true" />
+					</button>
+					{isOwner ? (
+						<Link className="button-link" to={`/auctions/${auction.id}/edit`}>
+							Edit auction
+						</Link>
+					) : null}
+				</div>
 			</div>
 			<p>{auction.description}</p>
 			<div className="auction-detail-grid">

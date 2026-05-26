@@ -51,6 +51,12 @@ namespace AuctionBackend.Controllers
                     Description = a.Description,
                     StartingPrice = a.StartingPrice,
                     CurrentPrice = a.CurrentPrice,
+                    CurrentHighestBidUserId = a.Bids
+                        .OrderByDescending(b => b.Amount)
+                        .ThenByDescending(b => b.CreatedAt)
+                        .ThenByDescending(b => b.Id)
+                        .Select(b => (int?)b.UserId)
+                        .FirstOrDefault(),
                     StartsAt = DateTime.SpecifyKind(a.StartsAt, DateTimeKind.Utc),
                     EndsAt = DateTime.SpecifyKind(a.EndsAt, DateTimeKind.Utc),
                     IsActive = a.IsActive,
@@ -84,6 +90,12 @@ namespace AuctionBackend.Controllers
                     Description = a.Description,
                     StartingPrice = a.StartingPrice,
                     CurrentPrice = a.CurrentPrice,
+                    CurrentHighestBidUserId = a.Bids
+                        .OrderByDescending(b => b.Amount)
+                        .ThenByDescending(b => b.CreatedAt)
+                        .ThenByDescending(b => b.Id)
+                        .Select(b => (int?)b.UserId)
+                        .FirstOrDefault(),
                     StartsAt = DateTime.SpecifyKind(a.StartsAt, DateTimeKind.Utc),
                     EndsAt = DateTime.SpecifyKind(a.EndsAt, DateTimeKind.Utc),
                     IsActive = a.IsActive,
@@ -115,6 +127,12 @@ namespace AuctionBackend.Controllers
                     Description = a.Description,
                     StartingPrice = a.StartingPrice,
                     CurrentPrice = a.CurrentPrice,
+                    CurrentHighestBidUserId = a.Bids
+                        .OrderByDescending(b => b.Amount)
+                        .ThenByDescending(b => b.CreatedAt)
+                        .ThenByDescending(b => b.Id)
+                        .Select(b => (int?)b.UserId)
+                        .FirstOrDefault(),
                     StartsAt = DateTime.SpecifyKind(a.StartsAt, DateTimeKind.Utc),
                     EndsAt = DateTime.SpecifyKind(a.EndsAt, DateTimeKind.Utc),
                     IsActive = a.IsActive,
@@ -145,6 +163,49 @@ namespace AuctionBackend.Controllers
                     Description = a.Description,
                     StartingPrice = a.StartingPrice,
                     CurrentPrice = a.CurrentPrice,
+                    CurrentHighestBidUserId = a.Bids
+                        .OrderByDescending(b => b.Amount)
+                        .ThenByDescending(b => b.CreatedAt)
+                        .ThenByDescending(b => b.Id)
+                        .Select(b => (int?)b.UserId)
+                        .FirstOrDefault(),
+                    StartsAt = DateTime.SpecifyKind(a.StartsAt, DateTimeKind.Utc),
+                    EndsAt = DateTime.SpecifyKind(a.EndsAt, DateTimeKind.Utc),
+                    IsActive = a.IsActive,
+                    UserId = a.UserId
+                });
+
+            var auctions = await EntityFrameworkQueryableExtensions.ToListAsync(query);
+
+            return Ok(auctions);
+        }
+
+        [Authorize]
+        [HttpGet("mine/bids")]
+        public async Task<ActionResult<IEnumerable<AuctionResponseDto>>> GetAuctionsIBidOn()
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue(ClaimTypes.Name);
+            if (string.IsNullOrWhiteSpace(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized();
+            }
+
+            var query = _dbContext.Auctions
+                .Where(a => a.Bids.Any(b => b.UserId == userId))
+                .OrderByDescending(a => a.EndsAt)
+                .Select(a => new AuctionResponseDto
+                {
+                    Id = a.Id,
+                    Title = a.Title,
+                    Description = a.Description,
+                    StartingPrice = a.StartingPrice,
+                    CurrentPrice = a.CurrentPrice,
+                    CurrentHighestBidUserId = a.Bids
+                        .OrderByDescending(b => b.Amount)
+                        .ThenByDescending(b => b.CreatedAt)
+                        .ThenByDescending(b => b.Id)
+                        .Select(b => (int?)b.UserId)
+                        .FirstOrDefault(),
                     StartsAt = DateTime.SpecifyKind(a.StartsAt, DateTimeKind.Utc),
                     EndsAt = DateTime.SpecifyKind(a.EndsAt, DateTimeKind.Utc),
                     IsActive = a.IsActive,
@@ -168,6 +229,12 @@ namespace AuctionBackend.Controllers
                     Description = a.Description,
                     StartingPrice = a.StartingPrice,
                     CurrentPrice = a.CurrentPrice,
+                    CurrentHighestBidUserId = a.Bids
+                        .OrderByDescending(b => b.Amount)
+                        .ThenByDescending(b => b.CreatedAt)
+                        .ThenByDescending(b => b.Id)
+                        .Select(b => (int?)b.UserId)
+                        .FirstOrDefault(),
                     StartsAt = DateTime.SpecifyKind(a.StartsAt, DateTimeKind.Utc),
                     EndsAt = DateTime.SpecifyKind(a.EndsAt, DateTimeKind.Utc),
                     IsActive = a.IsActive,
@@ -228,6 +295,7 @@ namespace AuctionBackend.Controllers
                 Description = auction.Description,
                 StartingPrice = auction.StartingPrice,
                 CurrentPrice = auction.CurrentPrice,
+                CurrentHighestBidUserId = null,
                 StartsAt = DateTime.SpecifyKind(auction.StartsAt, DateTimeKind.Utc),
                 EndsAt = DateTime.SpecifyKind(auction.EndsAt, DateTimeKind.Utc),
                 IsActive = auction.IsActive,
@@ -295,6 +363,13 @@ namespace AuctionBackend.Controllers
                 Description = auction.Description,
                 StartingPrice = auction.StartingPrice,
                 CurrentPrice = auction.CurrentPrice,
+                CurrentHighestBidUserId = await _dbContext.Bids
+                    .Where(b => b.AuctionId == auction.Id)
+                    .OrderByDescending(b => b.Amount)
+                    .ThenByDescending(b => b.CreatedAt)
+                    .ThenByDescending(b => b.Id)
+                    .Select(b => (int?)b.UserId)
+                    .FirstOrDefaultAsync(),
                 StartsAt = DateTime.SpecifyKind(auction.StartsAt, DateTimeKind.Utc),
                 EndsAt = DateTime.SpecifyKind(auction.EndsAt, DateTimeKind.Utc),
                 IsActive = auction.IsActive,

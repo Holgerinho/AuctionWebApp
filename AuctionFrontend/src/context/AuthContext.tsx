@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 type AuthContextValue = {
 	token: string | null
 	isAuthenticated: boolean
+	userId: number | null
 	userName: string | null
 	email: string | null
 	role: string | null
@@ -31,6 +32,7 @@ function AuthProvider({ children }: AuthProviderProps) {
 		}
 		try {
 			return JSON.parse(atob(token.split('.')[1])) as {
+				sub?: string
 				email?: string
 				role?: string
 				'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'?: string
@@ -41,6 +43,14 @@ function AuthProvider({ children }: AuthProviderProps) {
 			return null
 		}
 	}, [token])
+
+	const userId = useMemo(() => {
+		if (!tokenPayload?.sub) {
+			return null
+		}
+		const value = Number(tokenPayload.sub)
+		return Number.isFinite(value) ? value : null
+	}, [tokenPayload])
 
 	const userName = useMemo(() => {
 		if (!tokenPayload) {
@@ -85,6 +95,7 @@ function AuthProvider({ children }: AuthProviderProps) {
 		() => ({
 			token,
 			isAuthenticated: Boolean(token),
+			userId,
 			userName,
 			email,
 			role,
@@ -92,7 +103,7 @@ function AuthProvider({ children }: AuthProviderProps) {
 			login,
 			logout,
 		}),
-		[token, userName, email, role],
+		[token, userId, userName, email, role],
 	)
 
 	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
@@ -106,4 +117,5 @@ function useAuth() {
 	return context
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export { AuthProvider, useAuth }

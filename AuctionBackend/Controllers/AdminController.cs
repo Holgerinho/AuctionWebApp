@@ -56,6 +56,16 @@ namespace AuctionBackend.Controllers
             }
 
             user.IsActive = false;
+
+            var userAuctions = await _dbContext.Auctions
+                .Where(a => a.UserId == user.Id && a.IsActive)
+                .ToListAsync();
+
+            foreach (var auction in userAuctions)
+            {
+                auction.IsActive = false;
+            }
+
             await _dbContext.SaveChangesAsync();
             return NoContent();
         }
