@@ -246,9 +246,19 @@ namespace AuctionBackend.Controllers
                 return Forbid();
             }
 
+            var hasBids = await _dbContext.Bids.AnyAsync(b => b.AuctionId == id);
+            if (hasBids && dto.StartingPrice != auction.StartingPrice)
+            {
+                return BadRequest("Starting price cannot be changed after bids have been placed.");
+            }
+
             auction.Title = dto.Title;
             auction.Description = dto.Description;
             auction.StartingPrice = dto.StartingPrice;
+            if (!hasBids)
+            {
+                auction.CurrentPrice = dto.StartingPrice;
+            }
             auction.EndsAt = endsAtUtc;
             auction.IsActive = dto.IsActive;
 

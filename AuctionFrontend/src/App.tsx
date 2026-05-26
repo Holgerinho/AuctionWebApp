@@ -5,6 +5,7 @@ import AdminPage from './pages/AdminPage'
 import AuctionDetailsPage from './pages/AuctionDetailsPage'
 import AuctionSearchPage from './pages/AuctionSearchPage'
 import CreateAuctionPage from './pages/CreateAuctionPage'
+import EditAuctionPage from './pages/EditAuctionPage'
 import LoginPage from './pages/LoginPage'
 import MyAuctionsPage from './pages/MyAuctionsPage'
 import ProfilePage from './pages/ProfilePage'
@@ -22,6 +23,14 @@ function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/auctions" element={<AuctionSearchPage />} />
           <Route path="/auctions/:id" element={<AuctionDetailsPage />} />
+          <Route
+            path="/auctions/:id/edit"
+            element={
+              <ProtectedRoute>
+                <EditAuctionPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/auctions/create"
             element={

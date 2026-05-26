@@ -29,6 +29,14 @@ type CreateAuctionRequest = {
 	endsAt: string
 }
 
+type UpdateAuctionRequest = {
+	title: string
+	description: string
+	startingPrice: number
+	endsAt: string
+	isActive: boolean
+}
+
 async function request<TResponse>(
 	path: string,
 	options: RequestInit = {},
@@ -89,7 +97,22 @@ async function createAuction(
 	})
 }
 
-export type { Auction, Bid, CreateAuctionRequest }
+async function updateAuction(
+	id: number,
+	payload: UpdateAuctionRequest,
+	token: string,
+): Promise<Auction> {
+	return request<Auction>(`/api/auctions/${id}`, {
+		method: 'PUT',
+		headers: {
+			'Content-Type': 'application/json',
+			Authorization: `Bearer ${token}`,
+		},
+		body: JSON.stringify(payload),
+	})
+}
+
+export type { Auction, Bid, CreateAuctionRequest, UpdateAuctionRequest }
 export {
 	createAuction,
 	getAuctionById,
@@ -98,4 +121,5 @@ export {
 	getMyAuctions,
 	searchAuctions,
 	searchClosedAuctions,
+	updateAuction,
 }

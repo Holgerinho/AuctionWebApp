@@ -178,6 +178,14 @@
   margin-top: 12px;
 }
 
+.detail-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .detail-list,
 .bid-list {
   list-style: none;
@@ -218,6 +226,14 @@
   background: #ffffff;
 }
 
+.form-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text);
+}
+
 .form-error {
   margin: 0;
   color: var(--danger);
@@ -249,6 +265,20 @@
 .form-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  text-decoration: none;
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-weight: 600;
+  background: #fff;
 }
 
 .app-header {

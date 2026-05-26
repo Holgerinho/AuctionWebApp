@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import {
 	getAuctionById,
 	getBidsForAuction,
@@ -122,7 +122,14 @@ function AuctionDetailsPage() {
 
 	return (
 		<section className="app-section app-section--wide">
-			<h1>{auction.title}</h1>
+			<div className="detail-title-row">
+				<h1>{auction.title}</h1>
+				{isOwner ? (
+					<Link className="button-link" to={`/auctions/${auction.id}/edit`}>
+						Edit auction
+					</Link>
+				) : null}
+			</div>
 			<p>{auction.description}</p>
 			<div className="auction-detail-grid">
 				<div>
