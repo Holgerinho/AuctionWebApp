@@ -1,8 +1,10 @@
+using System.Security.Claims;
 using System.Threading.Tasks;
 using AuctionBackend.Data;
 using AuctionBackend.DTOs;
 using AuctionBackend.Models;
 using AuctionBackend.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -78,6 +80,39 @@ namespace AuctionBackend.Controllers
 
             var token = _tokenService.CreateToken(user);
             return Ok(new { token });
+        }
+
+        [Authorize]
+        [HttpPut("change-password")]
+        public async Task<IActionResult> ChangePassword(ChangePasswordDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.CurrentPassword) || string.IsNullOrWhiteSpace(dto.NewPassword))
+            {
+                return BadRequest("Current and new password are required.");
+            }
+
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue(ClaimTypes.Name);
+            if (string.IsNullOrWhiteSpace(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized();
+            }
+
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, dto.CurrentPassword);
+            if (result == PasswordVerificationResult.Failed)
+            {
+                return BadRequest("Current password is incorrect.");
+            }
+
+            user.PasswordHash = _passwordHasher.HashPassword(user, dto.NewPassword);
+            await _dbContext.SaveChangesAsync();
+
+            return Ok(new { message = "Password updated." });
         }
     }
 }

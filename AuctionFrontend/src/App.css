@@ -201,6 +201,12 @@
   font-size: 14px;
 }
 
+.form-success {
+  margin: 0;
+  color: #15803d;
+  font-size: 14px;
+}
+
 .form-button {
   border: none;
   border-radius: 999px;

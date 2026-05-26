@@ -18,6 +18,11 @@ type AuthResponse = {
 	token: string
 }
 
+type ChangePasswordRequest = {
+	currentPassword: string
+	newPassword: string
+}
+
 
 async function request<TResponse>(
 	path: string,
@@ -54,5 +59,19 @@ async function login(payload: LoginRequest): Promise<AuthResponse> {
 	})
 }
 
-export type { LoginRequest, RegisterRequest }
-export { login, register }
+async function changePassword(
+	payload: ChangePasswordRequest,
+	token: string,
+): Promise<void> {
+	await request<void>('/api/auth/change-password', {
+		method: 'PUT',
+		headers: {
+			'Content-Type': 'application/json',
+			Authorization: `Bearer ${token}`,
+		},
+		body: JSON.stringify(payload),
+	})
+}
+
+export type { ChangePasswordRequest, LoginRequest, RegisterRequest }
+export { changePassword, login, register }
