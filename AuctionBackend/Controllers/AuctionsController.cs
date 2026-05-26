@@ -93,7 +93,7 @@ namespace AuctionBackend.Controllers
         public async Task<ActionResult<IEnumerable<AuctionResponseDto>>> GetClosedAuctions([FromQuery] string? title)
         {
             var query = _dbContext.Auctions
-                .Where(a => (!a.IsActive || a.EndsAt <= DateTime.UtcNow));
+                .Where(a => a.IsActive && a.EndsAt <= DateTime.UtcNow);
 
             if (!string.IsNullOrWhiteSpace(title))
             {

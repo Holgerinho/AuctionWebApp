@@ -4,6 +4,8 @@ import type { ReactNode } from 'react'
 type AuthContextValue = {
 	token: string | null
 	isAuthenticated: boolean
+	role: string | null
+	isAdmin: boolean
 	login: (token: string) => void
 	logout: () => void
 }
@@ -21,6 +23,25 @@ function AuthProvider({ children }: AuthProviderProps) {
 		return localStorage.getItem(storageKey)
 	})
 
+	const role = useMemo(() => {
+		if (!token) {
+			return null
+		}
+		try {
+			const payload = JSON.parse(atob(token.split('.')[1])) as {
+				role?: string
+				'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'?: string
+			}
+			return (
+				payload.role ??
+				payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ??
+				null
+			)
+		} catch {
+			return null
+		}
+	}, [token])
+
 	const login = (newToken: string) => {
 		localStorage.setItem(storageKey, newToken)
 		setToken(newToken)
@@ -35,10 +56,12 @@ function AuthProvider({ children }: AuthProviderProps) {
 		() => ({
 			token,
 			isAuthenticated: Boolean(token),
+			role,
+			isAdmin: role === 'Admin',
 			login,
 			logout,
 		}),
-		[token],
+		[token, role],
 	)
 
 	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

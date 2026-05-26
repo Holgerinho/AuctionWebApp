@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 function Navbar() {
-	const { isAuthenticated, logout } = useAuth()
+	const { isAuthenticated, isAdmin, logout } = useAuth()
 
 	return (
 		<header className="navbar">
@@ -25,9 +25,11 @@ function Navbar() {
 							<NavLink className="navbar-link" to="/profile">
 								Profile
 							</NavLink>
-							<NavLink className="navbar-link" to="/admin">
-								Admin
-							</NavLink>
+							{isAdmin ? (
+								<NavLink className="navbar-link" to="/admin">
+									Admin
+								</NavLink>
+							) : null}
 							<button type="button" className="navbar-button" onClick={logout}>
 								Logout
 							</button>

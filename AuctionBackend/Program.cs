@@ -1,7 +1,9 @@
 using System.Text;
 using AuctionBackend.Data;
+using AuctionBackend.Models;
 using AuctionBackend.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Swashbuckle.AspNetCore.SwaggerGen;
@@ -20,6 +22,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddAuthorization();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(corsPolicyName, policy =>
@@ -51,6 +54,38 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var passwordHasher = new PasswordHasher<User>();
+    var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+
+    var adminUserName = config["AdminSeed:UserName"] ?? "admin";
+    var adminEmail = config["AdminSeed:Email"] ?? "admin@auction.local";
+    var adminPassword = config["AdminSeed:Password"] ?? "Admin123!";
+
+    var adminUser = dbContext.Users.FirstOrDefault(u => u.UserName == adminUserName);
+    if (adminUser == null)
+    {
+        adminUser = new User
+        {
+            UserName = adminUserName,
+            Email = adminEmail,
+            Role = "Admin",
+            IsActive = true
+        };
+        adminUser.PasswordHash = passwordHasher.HashPassword(adminUser, adminPassword);
+        dbContext.Users.Add(adminUser);
+    }
+    else
+    {
+        adminUser.Role = "Admin";
+        adminUser.IsActive = true;
+    }
+
+    dbContext.SaveChanges();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

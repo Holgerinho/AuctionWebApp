@@ -44,7 +44,9 @@ namespace AuctionBackend.Controllers
             var user = new User
             {
                 UserName = dto.UserName,
-                Email = dto.Email
+                Email = dto.Email,
+                Role = "User",
+                IsActive = true
             };
 
             user.PasswordHash = _passwordHasher.HashPassword(user, dto.Password);
@@ -70,6 +72,11 @@ namespace AuctionBackend.Controllers
             if (user == null)
             {
                 return Unauthorized("Invalid credentials.");
+            }
+
+            if (!user.IsActive)
+            {
+                return Unauthorized("This account is inactive.");
             }
 
             var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, dto.Password);
