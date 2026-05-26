@@ -1,0 +1,85 @@
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string
+if (!API_BASE_URL) {
+	throw new Error('VITE_API_BASE_URL is not configured.')
+}
+
+type Auction = {
+	id: number
+	title: string
+	description: string
+	startingPrice: number
+	currentPrice: number | null
+	endsAt: string
+	isActive: boolean
+	userId: number
+}
+
+type Bid = {
+	id: number
+	amount: number
+	createdAt: string
+	userId: number
+	auctionId: number
+}
+
+type CreateAuctionRequest = {
+	title: string
+	description: string
+	startingPrice: number
+	endsAt: string
+}
+
+async function request<TResponse>(
+	path: string,
+	options: RequestInit = {},
+): Promise<TResponse> {
+	const response = await fetch(`${API_BASE_URL}${path}`, options)
+
+	if (!response.ok) {
+		const text = await response.text()
+		const message = text || 'Request failed.'
+		throw new Error(message)
+	}
+
+	return response.json() as Promise<TResponse>
+}
+
+async function getAuctions(): Promise<Auction[]> {
+	return request<Auction[]>('/api/auctions')
+}
+
+async function searchAuctions(title: string): Promise<Auction[]> {
+	const query = new URLSearchParams({ title }).toString()
+	return request<Auction[]>(`/api/auctions/search?${query}`)
+}
+
+async function getAuctionById(id: number): Promise<Auction> {
+	return request<Auction>(`/api/auctions/${id}`)
+}
+
+async function getBidsForAuction(auctionId: number): Promise<Bid[]> {
+	return request<Bid[]>(`/api/auctions/${auctionId}/bids`)
+}
+
+async function createAuction(
+	payload: CreateAuctionRequest,
+	token: string,
+): Promise<Auction> {
+	return request<Auction>('/api/auctions', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+			Authorization: `Bearer ${token}`,
+		},
+		body: JSON.stringify(payload),
+	})
+}
+
+export type { Auction, Bid, CreateAuctionRequest }
+export {
+	createAuction,
+	getAuctionById,
+	getAuctions,
+	getBidsForAuction,
+	searchAuctions,
+}
