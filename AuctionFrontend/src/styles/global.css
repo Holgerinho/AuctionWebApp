@@ -1,19 +1,61 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=Manrope:wght@400;500;600;700&display=swap');
+
+:root {
+	--bg: #f6f7f4;
+	--surface: #ffffff;
+	--surface-muted: #eef1ed;
+	--primary: #0f172a;
+	--primary-soft: #1e293b;
+	--accent: #0f172a;
+	--border: rgba(15, 23, 42, 0.12);
+	--text: #0f172a;
+	--text-muted: #475569;
+	--success: #15803d;
+	--danger: #b91c1c;
+	--shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+	--radius: 18px;
+	--radius-pill: 999px;
+	--font-body: 'Manrope', 'Segoe UI', sans-serif;
+	--font-heading: 'Fraunces', 'Times New Roman', serif;
+}
+
 * {
 	box-sizing: border-box;
 }
 
 body {
 	margin: 0;
-	background: #f8fafc;
-	color: #111827;
-	font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+	color: var(--text);
+	font-family: var(--font-body);
+	background: radial-gradient(
+		circle at top,
+		#ffffff,
+		#f6f7f4 40%,
+		#eef1ed 100%
+	);
 }
 
 #root {
 	min-height: 100vh;
 }
 
-h1 {
-	font-size: 36px;
+h1,
+h2,
+h3 {
 	margin: 0;
+	font-family: var(--font-heading);
+	font-weight: 600;
+}
+
+h1 {
+	font-size: clamp(28px, 3vw, 38px);
+}
+
+p {
+	margin: 0;
+	color: var(--text-muted);
+}
+
+a {
+	color: inherit;
 }
