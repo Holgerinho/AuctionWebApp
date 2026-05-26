@@ -1,11 +1,10 @@
-import { Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminPage from './pages/AdminPage'
 import AuctionDetailsPage from './pages/AuctionDetailsPage'
 import AuctionSearchPage from './pages/AuctionSearchPage'
 import CreateAuctionPage from './pages/CreateAuctionPage'
-import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
 import MyAuctionsPage from './pages/MyAuctionsPage'
 import ProfilePage from './pages/ProfilePage'
@@ -18,7 +17,7 @@ function App() {
       <Navbar />
       <main className="app-main">
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<Navigate to="/auctions" replace />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/auctions" element={<AuctionSearchPage />} />
