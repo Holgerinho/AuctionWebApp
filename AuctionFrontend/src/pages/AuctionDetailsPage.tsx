@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import {
 	getAuctionById,
@@ -6,17 +6,22 @@ import {
 	type Auction,
 	type Bid,
 } from '../api/auctionApi'
+import { createBid } from '../api/bidApi'
+import { useAuth } from '../context/AuthContext'
 
 function AuctionDetailsPage() {
 	const { id } = useParams()
 	const auctionId = Number(id)
+	const { isAuthenticated, token } = useAuth()
 	const [auction, setAuction] = useState<Auction | null>(null)
 	const [bids, setBids] = useState<Bid[]>([])
 	const [isLoading, setIsLoading] = useState(true)
 	const [error, setError] = useState('')
+	const [bidAmount, setBidAmount] = useState('')
+	const [bidError, setBidError] = useState('')
+	const [isSubmittingBid, setIsSubmittingBid] = useState(false)
 
-	useEffect(() => {
-		const loadDetails = async () => {
+	const loadDetails = useCallback(async () => {
 			if (!auctionId) {
 				setError('Invalid auction id.')
 				setIsLoading(false)
@@ -37,10 +42,26 @@ function AuctionDetailsPage() {
 			} finally {
 				setIsLoading(false)
 			}
-		}
-
-		loadDetails()
 	}, [auctionId])
+
+	const isOwner = useMemo(() => {
+		if (!token || !auction) {
+			return false
+		}
+		try {
+			const payload = JSON.parse(atob(token.split('.')[1])) as {
+				sub?: string
+			}
+			return Number(payload.sub) === auction.userId
+		} catch {
+			return false
+		}
+	}, [token, auction])
+
+	useEffect(() => {
+		// eslint-disable-next-line react-hooks/set-state-in-effect
+		void loadDetails()
+	}, [loadDetails])
 
 	if (isLoading) {
 		return (
@@ -63,6 +84,39 @@ function AuctionDetailsPage() {
 	const price = auction.currentPrice ?? auction.startingPrice
 	const endsAt = new Date(auction.endsAt).toLocaleString()
 
+	const canBid = isAuthenticated && !isOwner && auction.isActive
+
+	const handleBidSubmit = async (
+		event: React.FormEvent<HTMLFormElement>,
+	) => {
+		event.preventDefault()
+		setBidError('')
+
+		if (!token) {
+			setBidError('You must be logged in to place a bid.')
+			return
+		}
+
+		const amount = Number(bidAmount)
+		if (!Number.isFinite(amount) || amount <= price) {
+			setBidError('Bid must be higher than the current price.')
+			return
+		}
+
+		setIsSubmittingBid(true)
+		try {
+			await createBid(auctionId, { amount }, token)
+			setBidAmount('')
+			await loadDetails()
+		} catch (err) {
+			setBidError(
+				err instanceof Error ? err.message : 'Failed to submit bid.',
+			)
+		} finally {
+			setIsSubmittingBid(false)
+		}
+	}
+
 	return (
 		<section className="app-section app-section--wide">
 			<h1>{auction.title}</h1>
@@ -75,6 +129,35 @@ function AuctionDetailsPage() {
 						<li>Ends: {endsAt}</li>
 						<li>Status: {auction.isActive ? 'Active' : 'Inactive'}</li>
 					</ul>
+					{canBid ? (
+						<form className="form" onSubmit={handleBidSubmit}>
+							<label className="form-field">
+								<span>Your bid (SEK)</span>
+								<input
+									type="number"
+									min={Math.ceil(price + 1)}
+									step="1"
+									required
+									value={bidAmount}
+									onChange={(event) => setBidAmount(event.target.value)}
+								/>
+							</label>
+							{bidError ? <p className="form-error">{bidError}</p> : null}
+							<button
+								className="form-button"
+								type="submit"
+								disabled={isSubmittingBid}
+							>
+								{isSubmittingBid ? 'Submitting...' : 'Place bid'}
+							</button>
+						</form>
+					) : !isAuthenticated ? (
+						<p>Log in to place a bid.</p>
+					) : isOwner ? (
+						<p>You cannot bid on your own auction.</p>
+					) : (
+						<p>Bidding is closed for this auction.</p>
+					)}
 				</div>
 				<div>
 					<h3>Bid history</h3>
