@@ -84,6 +84,49 @@
   gap: 12px;
 }
 
+.form {
+  display: grid;
+  gap: 16px;
+  text-align: left;
+  margin-top: 12px;
+}
+
+.form-field {
+  display: grid;
+  gap: 8px;
+  font-size: 14px;
+  color: #1f2937;
+}
+
+.form-field input {
+  border-radius: 10px;
+  border: 1px solid #cbd5f5;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.form-error {
+  margin: 0;
+  color: #b91c1c;
+  font-size: 14px;
+}
+
+.form-button {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: #0f172a;
+  color: #f8fafc;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.form-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .app-header {
   max-width: 640px;
   text-align: center;
