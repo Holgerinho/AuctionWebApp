@@ -53,6 +53,12 @@ async function searchAuctions(title: string): Promise<Auction[]> {
 	return request<Auction[]>(`/api/auctions/search?${query}`)
 }
 
+async function searchClosedAuctions(title: string): Promise<Auction[]> {
+	const query = title ? new URLSearchParams({ title }).toString() : ''
+	const path = query ? `/api/auctions/closed?${query}` : '/api/auctions/closed'
+	return request<Auction[]>(path)
+}
+
 async function getAuctionById(id: number): Promise<Auction> {
 	return request<Auction>(`/api/auctions/${id}`)
 }
@@ -91,4 +97,5 @@ export {
 	getBidsForAuction,
 	getMyAuctions,
 	searchAuctions,
+	searchClosedAuctions,
 }

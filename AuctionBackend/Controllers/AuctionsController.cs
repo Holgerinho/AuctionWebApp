@@ -23,6 +23,21 @@ namespace AuctionBackend.Controllers
             _dbContext = dbContext;
         }
 
+        private static DateTime NormalizeToUtc(DateTime value)
+        {
+            if (value.Kind == DateTimeKind.Utc)
+            {
+                return value;
+            }
+
+            if (value.Kind == DateTimeKind.Local)
+            {
+                return value.ToUniversalTime();
+            }
+
+            return DateTime.SpecifyKind(value, DateTimeKind.Local).ToUniversalTime();
+        }
+
         [HttpGet]
         public async Task<ActionResult<IEnumerable<AuctionResponseDto>>> GetAuctions()
         {
@@ -47,7 +62,7 @@ namespace AuctionBackend.Controllers
         }
 
         [HttpGet("search")]
-        public async Task<ActionResult<IEnumerable<AuctionResponseDto>>> Search([FromQuery] string title)
+        public async Task<ActionResult<IEnumerable<AuctionResponseDto>>> Search([FromQuery] string? title)
         {
             if (string.IsNullOrWhiteSpace(title))
             {
@@ -72,6 +87,35 @@ namespace AuctionBackend.Controllers
             var auctions = await EntityFrameworkQueryableExtensions.ToListAsync(query);
 
             return Ok(auctions);
+        }
+
+        [HttpGet("closed")]
+        public async Task<ActionResult<IEnumerable<AuctionResponseDto>>> GetClosedAuctions([FromQuery] string? title)
+        {
+            var query = _dbContext.Auctions
+                .Where(a => (!a.IsActive || a.EndsAt <= DateTime.UtcNow));
+
+            if (!string.IsNullOrWhiteSpace(title))
+            {
+                query = query.Where(a => a.Title.Contains(title));
+            }
+
+            var results = await query
+                .OrderByDescending(a => a.EndsAt)
+                .Select(a => new AuctionResponseDto
+                {
+                    Id = a.Id,
+                    Title = a.Title,
+                    Description = a.Description,
+                    StartingPrice = a.StartingPrice,
+                    CurrentPrice = a.CurrentPrice,
+                    EndsAt = a.EndsAt,
+                    IsActive = a.IsActive,
+                    UserId = a.UserId
+                })
+                .ToListAsync();
+
+            return Ok(results);
         }
 
         [Authorize]
@@ -135,7 +179,9 @@ namespace AuctionBackend.Controllers
         [HttpPost]
         public async Task<ActionResult<AuctionResponseDto>> Create(CreateAuctionDto dto)
         {
-            if (string.IsNullOrWhiteSpace(dto.Title) || dto.StartingPrice <= 0 || dto.EndsAt <= DateTime.UtcNow)
+            var endsAtUtc = NormalizeToUtc(dto.EndsAt);
+
+            if (string.IsNullOrWhiteSpace(dto.Title) || dto.StartingPrice <= 0 || endsAtUtc <= DateTime.UtcNow)
             {
                 return BadRequest("Title, starting price, and a future end date are required.");
             }
@@ -152,7 +198,7 @@ namespace AuctionBackend.Controllers
                 Description = dto.Description,
                 StartingPrice = dto.StartingPrice,
                 CurrentPrice = dto.StartingPrice,
-                EndsAt = dto.EndsAt,
+                EndsAt = endsAtUtc,
                 UserId = userId
             };
 
@@ -176,7 +222,9 @@ namespace AuctionBackend.Controllers
         [HttpPut("{id:int}")]
         public async Task<ActionResult<AuctionResponseDto>> Update(int id, UpdateAuctionDto dto)
         {
-            if (string.IsNullOrWhiteSpace(dto.Title) || dto.StartingPrice <= 0 || dto.EndsAt <= DateTime.UtcNow)
+            var endsAtUtc = NormalizeToUtc(dto.EndsAt);
+
+            if (string.IsNullOrWhiteSpace(dto.Title) || dto.StartingPrice <= 0 || endsAtUtc <= DateTime.UtcNow)
             {
                 return BadRequest("Title, starting price, and a future end date are required.");
             }
@@ -201,7 +249,7 @@ namespace AuctionBackend.Controllers
             auction.Title = dto.Title;
             auction.Description = dto.Description;
             auction.StartingPrice = dto.StartingPrice;
-            auction.EndsAt = dto.EndsAt;
+            auction.EndsAt = endsAtUtc;
             auction.IsActive = dto.IsActive;
 
             await _dbContext.SaveChangesAsync();

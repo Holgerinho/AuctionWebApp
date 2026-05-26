@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import {
 	getAuctions,
 	searchAuctions,
+	searchClosedAuctions,
 	type Auction,
 } from '../api/auctionApi'
 import AuctionCard from '../components/AuctionCard'
@@ -11,21 +12,25 @@ function AuctionSearchPage() {
 	const [auctions, setAuctions] = useState<Auction[]>([])
 	const [isLoading, setIsLoading] = useState(true)
 	const [error, setError] = useState('')
+	const [showClosed, setShowClosed] = useState(false)
 
 	const loadAuctions = useCallback(async () => {
 		setIsLoading(true)
 		setError('')
 		try {
-			const data = query.trim()
-				? await searchAuctions(query.trim())
-				: await getAuctions()
+			const trimmedQuery = query.trim()
+			const data = showClosed
+				? await searchClosedAuctions(trimmedQuery)
+				: trimmedQuery
+					? await searchAuctions(trimmedQuery)
+					: await getAuctions()
 			setAuctions(data)
 		} catch (err) {
 			setError(err instanceof Error ? err.message : 'Failed to load auctions.')
 		} finally {
 			setIsLoading(false)
 		}
-	}, [query])
+	}, [query, showClosed])
 
 	useEffect(() => {
 		// eslint-disable-next-line react-hooks/set-state-in-effect
@@ -51,6 +56,14 @@ function AuctionSearchPage() {
 						value={query}
 						onChange={(event) => setQuery(event.target.value)}
 					/>
+					<label className="search-toggle">
+						<input
+							type="checkbox"
+							checked={showClosed}
+							onChange={(event) => setShowClosed(event.target.checked)}
+						/>
+						<span>Show closed</span>
+					</label>
 					<button className="form-button" type="submit" disabled={isLoading}>
 						Search
 					</button>

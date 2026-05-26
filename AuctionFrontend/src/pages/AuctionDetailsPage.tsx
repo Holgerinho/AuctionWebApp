@@ -82,9 +82,12 @@ function AuctionDetailsPage() {
 	}
 
 	const price = auction.currentPrice ?? auction.startingPrice
-	const endsAt = new Date(auction.endsAt).toLocaleString()
+	const endsAtDate = new Date(auction.endsAt)
+	const endsAt = endsAtDate.toLocaleString()
+	const isClosed = !auction.isActive || endsAtDate <= new Date()
 
-	const canBid = isAuthenticated && !isOwner && auction.isActive
+	const canBid = isAuthenticated && !isOwner && !isClosed
+	const highestBid = bids.length > 0 ? bids[0] : null
 
 	const handleBidSubmit = async (
 		event: React.FormEvent<HTMLFormElement>,
@@ -127,7 +130,7 @@ function AuctionDetailsPage() {
 					<ul className="detail-list">
 						<li>Current price: {price} kr</li>
 						<li>Ends: {endsAt}</li>
-						<li>Status: {auction.isActive ? 'Active' : 'Inactive'}</li>
+						<li>Status: {isClosed ? 'Closed' : 'Open'}</li>
 					</ul>
 					{canBid ? (
 						<form className="form" onSubmit={handleBidSubmit}>
@@ -160,8 +163,21 @@ function AuctionDetailsPage() {
 					)}
 				</div>
 				<div>
-					<h3>Bid history</h3>
-					{bids.length === 0 ? (
+					<h3>{isClosed ? 'Winning bid' : 'Bid history'}</h3>
+					{isClosed ? (
+						highestBid ? (
+							<ul className="bid-list">
+								<li>
+									<span>{highestBid.amount} kr</span>
+									<span>
+										{new Date(highestBid.createdAt).toLocaleString()}
+									</span>
+								</li>
+							</ul>
+						) : (
+							<p>No bids were placed.</p>
+						)
+					) : bids.length === 0 ? (
 						<p>No bids yet.</p>
 					) : (
 						<ul className="bid-list">
