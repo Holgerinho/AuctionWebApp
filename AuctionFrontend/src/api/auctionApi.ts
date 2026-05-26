@@ -9,6 +9,7 @@ type Auction = {
 	description: string
 	startingPrice: number
 	currentPrice: number | null
+	startsAt: string
 	endsAt: string
 	isActive: boolean
 	userId: number
@@ -26,6 +27,7 @@ type CreateAuctionRequest = {
 	title: string
 	description: string
 	startingPrice: number
+	startsAt: string
 	endsAt: string
 }
 
@@ -33,6 +35,7 @@ type UpdateAuctionRequest = {
 	title: string
 	description: string
 	startingPrice: number
+	startsAt: string
 	endsAt: string
 	isActive: boolean
 }

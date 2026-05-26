@@ -17,6 +17,7 @@ function EditAuctionPage() {
 	const [title, setTitle] = useState('')
 	const [description, setDescription] = useState('')
 	const [startingPrice, setStartingPrice] = useState('')
+	const [startsAt, setStartsAt] = useState('')
 	const [endsAt, setEndsAt] = useState('')
 	const [isActive, setIsActive] = useState(true)
 	const [isLoading, setIsLoading] = useState(true)
@@ -59,6 +60,7 @@ function EditAuctionPage() {
 				setTitle(auction.title)
 				setDescription(auction.description)
 				setStartingPrice(String(auction.startingPrice))
+				setStartsAt(toDateTimeLocal(auction.startsAt))
 				setEndsAt(toDateTimeLocal(auction.endsAt))
 				setIsActive(auction.isActive)
 			} catch (err) {
@@ -86,7 +88,14 @@ function EditAuctionPage() {
 			return
 		}
 
+		const startsAtIso = new Date(startsAt).toISOString()
 		const endsAtIso = new Date(endsAt).toISOString()
+
+		if (new Date(startsAtIso) >= new Date(endsAtIso)) {
+			setError('Start date must be before end date.')
+			return
+		}
+
 		setIsSubmitting(true)
 		try {
 			const updated = await updateAuction(
@@ -95,6 +104,7 @@ function EditAuctionPage() {
 					title,
 					description,
 					startingPrice: priceValue,
+					startsAt: startsAtIso,
 					endsAt: endsAtIso,
 					isActive,
 				},
@@ -153,6 +163,15 @@ function EditAuctionPage() {
 						disabled={hasBids}
 						value={startingPrice}
 						onChange={(event) => setStartingPrice(event.target.value)}
+					/>
+				</label>
+				<label className="form-field">
+					<span>Starts at</span>
+					<input
+						type="datetime-local"
+						required
+						value={startsAt}
+						onChange={(event) => setStartsAt(event.target.value)}
 					/>
 				</label>
 				<label className="form-field">

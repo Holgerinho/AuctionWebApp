@@ -18,6 +18,7 @@ type AdminAuction = {
 	description: string
 	startingPrice: number
 	currentPrice: number | null
+	startsAt: string
 	endsAt: string
 	isActive: boolean
 	userId: number

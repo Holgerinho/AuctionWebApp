@@ -90,6 +90,7 @@ function AuctionDetailsPage() {
 	}
 
 	const price = auction.currentPrice ?? auction.startingPrice
+	const startsAt = new Date(auction.startsAt).toLocaleString()
 	const endsAtDate = new Date(auction.endsAt)
 	const endsAt = endsAtDate.toLocaleString()
 	const isClosed = !auction.isActive || endsAtDate <= new Date()
@@ -175,6 +176,7 @@ function AuctionDetailsPage() {
 					<h3>Details</h3>
 					<ul className="detail-list">
 						<li>Current price: {price} kr</li>
+						<li>Starts: {startsAt}</li>
 						<li>Ends: {endsAt}</li>
 						<li>Status: {isClosed ? 'Closed' : 'Open'}</li>
 					</ul>

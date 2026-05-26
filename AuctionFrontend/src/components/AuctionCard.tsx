@@ -7,6 +7,7 @@ type AuctionCardProps = {
 
 function AuctionCard({ auction }: AuctionCardProps) {
 	const price = auction.currentPrice ?? auction.startingPrice
+	const startsAt = new Date(auction.startsAt).toLocaleString()
 	const endsAt = new Date(auction.endsAt).toLocaleString()
 
 	return (
@@ -17,6 +18,7 @@ function AuctionCard({ auction }: AuctionCardProps) {
 			</div>
 			<div className="auction-card-meta">
 				<span>Current price: {price} kr</span>
+				<span>Starts: {startsAt}</span>
 				<span>Ends: {endsAt}</span>
 			</div>
 			<Link className="auction-card-link" to={`/auctions/${auction.id}`}>

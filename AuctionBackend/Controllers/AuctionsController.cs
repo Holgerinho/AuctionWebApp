@@ -51,6 +51,7 @@ namespace AuctionBackend.Controllers
                     Description = a.Description,
                     StartingPrice = a.StartingPrice,
                     CurrentPrice = a.CurrentPrice,
+                    StartsAt = DateTime.SpecifyKind(a.StartsAt, DateTimeKind.Utc),
                     EndsAt = DateTime.SpecifyKind(a.EndsAt, DateTimeKind.Utc),
                     IsActive = a.IsActive,
                     UserId = a.UserId
@@ -79,6 +80,7 @@ namespace AuctionBackend.Controllers
                     Description = a.Description,
                     StartingPrice = a.StartingPrice,
                     CurrentPrice = a.CurrentPrice,
+                    StartsAt = DateTime.SpecifyKind(a.StartsAt, DateTimeKind.Utc),
                     EndsAt = DateTime.SpecifyKind(a.EndsAt, DateTimeKind.Utc),
                     IsActive = a.IsActive,
                     UserId = a.UserId
@@ -109,6 +111,7 @@ namespace AuctionBackend.Controllers
                     Description = a.Description,
                     StartingPrice = a.StartingPrice,
                     CurrentPrice = a.CurrentPrice,
+                    StartsAt = DateTime.SpecifyKind(a.StartsAt, DateTimeKind.Utc),
                     EndsAt = DateTime.SpecifyKind(a.EndsAt, DateTimeKind.Utc),
                     IsActive = a.IsActive,
                     UserId = a.UserId
@@ -138,6 +141,7 @@ namespace AuctionBackend.Controllers
                     Description = a.Description,
                     StartingPrice = a.StartingPrice,
                     CurrentPrice = a.CurrentPrice,
+                    StartsAt = DateTime.SpecifyKind(a.StartsAt, DateTimeKind.Utc),
                     EndsAt = DateTime.SpecifyKind(a.EndsAt, DateTimeKind.Utc),
                     IsActive = a.IsActive,
                     UserId = a.UserId
@@ -160,6 +164,7 @@ namespace AuctionBackend.Controllers
                     Description = a.Description,
                     StartingPrice = a.StartingPrice,
                     CurrentPrice = a.CurrentPrice,
+                    StartsAt = DateTime.SpecifyKind(a.StartsAt, DateTimeKind.Utc),
                     EndsAt = DateTime.SpecifyKind(a.EndsAt, DateTimeKind.Utc),
                     IsActive = a.IsActive,
                     UserId = a.UserId
@@ -179,11 +184,17 @@ namespace AuctionBackend.Controllers
         [HttpPost]
         public async Task<ActionResult<AuctionResponseDto>> Create(CreateAuctionDto dto)
         {
+            var startsAtUtc = NormalizeToUtc(dto.StartsAt);
             var endsAtUtc = NormalizeToUtc(dto.EndsAt);
 
-            if (string.IsNullOrWhiteSpace(dto.Title) || dto.StartingPrice <= 0 || endsAtUtc <= DateTime.UtcNow)
+            if (
+                string.IsNullOrWhiteSpace(dto.Title)
+                || dto.StartingPrice <= 0
+                || startsAtUtc >= endsAtUtc
+                || endsAtUtc <= DateTime.UtcNow
+            )
             {
-                return BadRequest("Title, starting price, and a future end date are required.");
+                return BadRequest("Title, starting price, valid start date, and a future end date are required.");
             }
 
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue(ClaimTypes.Name);
@@ -198,6 +209,7 @@ namespace AuctionBackend.Controllers
                 Description = dto.Description,
                 StartingPrice = dto.StartingPrice,
                 CurrentPrice = dto.StartingPrice,
+                StartsAt = startsAtUtc,
                 EndsAt = endsAtUtc,
                 UserId = userId
             };
@@ -212,6 +224,7 @@ namespace AuctionBackend.Controllers
                 Description = auction.Description,
                 StartingPrice = auction.StartingPrice,
                 CurrentPrice = auction.CurrentPrice,
+                StartsAt = DateTime.SpecifyKind(auction.StartsAt, DateTimeKind.Utc),
                 EndsAt = DateTime.SpecifyKind(auction.EndsAt, DateTimeKind.Utc),
                 IsActive = auction.IsActive,
                 UserId = auction.UserId
@@ -222,11 +235,17 @@ namespace AuctionBackend.Controllers
         [HttpPut("{id:int}")]
         public async Task<ActionResult<AuctionResponseDto>> Update(int id, UpdateAuctionDto dto)
         {
+            var startsAtUtc = NormalizeToUtc(dto.StartsAt);
             var endsAtUtc = NormalizeToUtc(dto.EndsAt);
 
-            if (string.IsNullOrWhiteSpace(dto.Title) || dto.StartingPrice <= 0 || endsAtUtc <= DateTime.UtcNow)
+            if (
+                string.IsNullOrWhiteSpace(dto.Title)
+                || dto.StartingPrice <= 0
+                || startsAtUtc >= endsAtUtc
+                || endsAtUtc <= DateTime.UtcNow
+            )
             {
-                return BadRequest("Title, starting price, and a future end date are required.");
+                return BadRequest("Title, starting price, valid start date, and a future end date are required.");
             }
 
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue(ClaimTypes.Name);
@@ -259,6 +278,7 @@ namespace AuctionBackend.Controllers
             {
                 auction.CurrentPrice = dto.StartingPrice;
             }
+            auction.StartsAt = startsAtUtc;
             auction.EndsAt = endsAtUtc;
             auction.IsActive = dto.IsActive;
 
@@ -271,6 +291,7 @@ namespace AuctionBackend.Controllers
                 Description = auction.Description,
                 StartingPrice = auction.StartingPrice,
                 CurrentPrice = auction.CurrentPrice,
+                StartsAt = DateTime.SpecifyKind(auction.StartsAt, DateTimeKind.Utc),
                 EndsAt = DateTime.SpecifyKind(auction.EndsAt, DateTimeKind.Utc),
                 IsActive = auction.IsActive,
                 UserId = auction.UserId

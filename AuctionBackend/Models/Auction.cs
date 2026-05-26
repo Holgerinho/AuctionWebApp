@@ -10,6 +10,7 @@ namespace AuctionBackend.Models
         public string Description { get; set; } = string.Empty;
         public decimal StartingPrice { get; set; }
         public decimal? CurrentPrice { get; set; }
+        public DateTime StartsAt { get; set; }
         public DateTime EndsAt { get; set; }
         public bool IsActive { get; set; } = true;
 

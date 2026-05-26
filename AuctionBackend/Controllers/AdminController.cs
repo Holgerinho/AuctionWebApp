@@ -72,6 +72,7 @@ namespace AuctionBackend.Controllers
                     Description = a.Description,
                     StartingPrice = a.StartingPrice,
                     CurrentPrice = a.CurrentPrice,
+                    StartsAt = DateTime.SpecifyKind(a.StartsAt, DateTimeKind.Utc),
                     EndsAt = DateTime.SpecifyKind(a.EndsAt, DateTimeKind.Utc),
                     IsActive = a.IsActive,
                     UserId = a.UserId

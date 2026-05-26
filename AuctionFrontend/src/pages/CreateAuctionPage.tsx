@@ -9,6 +9,7 @@ function CreateAuctionPage() {
 	const [title, setTitle] = useState('')
 	const [description, setDescription] = useState('')
 	const [startingPrice, setStartingPrice] = useState('')
+	const [startsAt, setStartsAt] = useState('')
 	const [endsAt, setEndsAt] = useState('')
 	const [isSubmitting, setIsSubmitting] = useState(false)
 	const [error, setError] = useState('')
@@ -28,7 +29,14 @@ function CreateAuctionPage() {
 			return
 		}
 
+		const startsAtIso = new Date(startsAt).toISOString()
 		const endsAtIso = new Date(endsAt).toISOString()
+
+		if (new Date(startsAtIso) >= new Date(endsAtIso)) {
+			setError('Start date must be before end date.')
+			return
+		}
+
 		setIsSubmitting(true)
 		try {
 			const auction = await createAuction(
@@ -36,6 +44,7 @@ function CreateAuctionPage() {
 					title,
 					description,
 					startingPrice: priceValue,
+					startsAt: startsAtIso,
 					endsAt: endsAtIso,
 				},
 				token,
@@ -80,6 +89,15 @@ function CreateAuctionPage() {
 						required
 						value={startingPrice}
 						onChange={(event) => setStartingPrice(event.target.value)}
+					/>
+				</label>
+				<label className="form-field">
+					<span>Starts at</span>
+					<input
+						type="datetime-local"
+						required
+						value={startsAt}
+						onChange={(event) => setStartsAt(event.target.value)}
 					/>
 				</label>
 				<label className="form-field">
