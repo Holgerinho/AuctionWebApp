@@ -61,6 +61,14 @@ async function getBidsForAuction(auctionId: number): Promise<Bid[]> {
 	return request<Bid[]>(`/api/auctions/${auctionId}/bids`)
 }
 
+async function getMyAuctions(token: string): Promise<Auction[]> {
+	return request<Auction[]>('/api/auctions/mine', {
+		headers: {
+			Authorization: `Bearer ${token}`,
+		},
+	})
+}
+
 async function createAuction(
 	payload: CreateAuctionRequest,
 	token: string,
@@ -81,5 +89,6 @@ export {
 	getAuctionById,
 	getAuctions,
 	getBidsForAuction,
+	getMyAuctions,
 	searchAuctions,
 }

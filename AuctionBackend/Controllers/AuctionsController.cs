@@ -74,6 +74,36 @@ namespace AuctionBackend.Controllers
             return Ok(auctions);
         }
 
+        [Authorize]
+        [HttpGet("mine")]
+        public async Task<ActionResult<IEnumerable<AuctionResponseDto>>> GetMyAuctions()
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue(ClaimTypes.Name);
+            if (string.IsNullOrWhiteSpace(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized();
+            }
+
+            var query = _dbContext.Auctions
+                .Where(a => a.UserId == userId)
+                .OrderByDescending(a => a.EndsAt)
+                .Select(a => new AuctionResponseDto
+                {
+                    Id = a.Id,
+                    Title = a.Title,
+                    Description = a.Description,
+                    StartingPrice = a.StartingPrice,
+                    CurrentPrice = a.CurrentPrice,
+                    EndsAt = a.EndsAt,
+                    IsActive = a.IsActive,
+                    UserId = a.UserId
+                });
+
+            var auctions = await EntityFrameworkQueryableExtensions.ToListAsync(query);
+
+            return Ok(auctions);
+        }
+
         [HttpGet("{id:int}")]
         public async Task<ActionResult<AuctionResponseDto>> GetById(int id)
         {
