@@ -130,6 +130,7 @@
 
 .auction-grid {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 16px;
 }
 
@@ -215,6 +216,14 @@
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 10px;
+}
+
+.admin-list li > div {
+  min-width: 0;
+}
+
+.admin-list li p {
+  overflow-wrap: anywhere;
 }
 
 .detail-list,
@@ -344,5 +353,87 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@media (max-width: 900px) {
+  .app-main {
+    padding: 28px 16px 40px;
+  }
+
+  .navbar-inner {
+    padding: 14px 16px;
+    gap: 12px;
+  }
+
+  .navbar-links {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-section {
+    padding: 22px 16px;
+    border-radius: 14px;
+  }
+
+  .section-header {
+    align-items: stretch;
+  }
+
+  .search {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .search-input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .search .form-button {
+    width: 100%;
+  }
+
+  .auction-detail-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .admin-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-list li {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-list li .form-button {
+    width: 100%;
+  }
+
+  .bid-list li {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar-brand {
+    width: 100%;
+  }
+
+  .navbar-links {
+    gap: 8px;
+  }
+
+  .navbar-link,
+  .navbar-button {
+    flex: 1 1 calc(50% - 8px);
+    text-align: center;
   }
 }
