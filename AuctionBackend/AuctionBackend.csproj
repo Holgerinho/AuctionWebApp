@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>auctionwebapp-backend-8f4f4879-7272-4e2f-9979-8d23690dd60a</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
