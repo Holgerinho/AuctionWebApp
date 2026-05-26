@@ -52,6 +52,20 @@
   background: rgba(148, 163, 184, 0.12);
 }
 
+.navbar-button {
+  border: none;
+  color: #e2e8f0;
+  font-size: 14px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(248, 113, 113, 0.2);
+  cursor: pointer;
+}
+
+.navbar-button:hover {
+  background: rgba(248, 113, 113, 0.35);
+}
+
 .navbar-link.active {
   background: #38bdf8;
   color: #0f172a;
