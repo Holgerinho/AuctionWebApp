@@ -118,6 +118,14 @@ function EditAuctionPage() {
 		}
 	}
 
+	const handleBack = () => {
+		if (window.history.length > 1) {
+			navigate(-1)
+			return
+		}
+		navigate(auctionId ? `/auctions/${auctionId}` : '/auctions')
+	}
+
 	if (isLoading) {
 		return (
 			<section className="app-section">
@@ -129,7 +137,18 @@ function EditAuctionPage() {
 
 	return (
 		<section className="app-section">
-			<h1>Edit auction</h1>
+			<div className="detail-title-row">
+				<h1>Edit auction</h1>
+				<button
+					type="button"
+					className="button-link button-link-icon"
+					onClick={handleBack}
+					aria-label="Go back"
+					title="Go back"
+				>
+					<span className="back-arrow" aria-hidden="true" />
+				</button>
+			</div>
 			<p>
 				Update your auction listing. {hasBids
 					? 'Starting price is locked because bids exist.'

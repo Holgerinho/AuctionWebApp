@@ -1,8 +1,16 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 function Navbar() {
 	const { isAuthenticated, isAdmin, logout, userName } = useAuth()
+	const location = useLocation()
+	const path = location.pathname
+	const isCreateOrEditPath =
+		path === '/auctions/create' || /^\/auctions\/\d+\/edit$/.test(path)
+	const isAuctionsActive =
+		path === '/auctions' ||
+		(/^\/auctions\/\d+$/.test(path) && !isCreateOrEditPath)
+	const isMyAuctionsActive = path === '/my-auctions' || isCreateOrEditPath
 
 	return (
 		<header className="navbar">
@@ -11,15 +19,19 @@ function Navbar() {
 					AuctionWebApp
 				</NavLink>
 				<nav className="navbar-links">
-					<NavLink className="navbar-link" to="/auctions">
+					<NavLink
+						end
+						className={`navbar-link${isAuctionsActive ? ' active' : ''}`}
+						to="/auctions"
+					>
 						Auctions
 					</NavLink>
 					{isAuthenticated ? (
 						<>
-							<NavLink className="navbar-link" to="/auctions/create">
-								Create
-							</NavLink>
-							<NavLink className="navbar-link" to="/my-auctions">
+							<NavLink
+								className={`navbar-link${isMyAuctionsActive ? ' active' : ''}`}
+								to="/my-auctions"
+							>
 								My auctions
 							</NavLink>
 							<NavLink className="navbar-link" to="/profile">

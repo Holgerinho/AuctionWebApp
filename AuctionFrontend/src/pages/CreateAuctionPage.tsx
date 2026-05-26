@@ -14,6 +14,14 @@ function CreateAuctionPage() {
 	const [isSubmitting, setIsSubmitting] = useState(false)
 	const [error, setError] = useState('')
 
+	const handleBack = () => {
+		if (window.history.length > 1) {
+			navigate(-1)
+			return
+		}
+		navigate('/my-auctions')
+	}
+
 	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault()
 		setError('')
@@ -59,7 +67,18 @@ function CreateAuctionPage() {
 
 	return (
 		<section className="app-section">
-			<h1>Create auction</h1>
+			<div className="detail-title-row">
+				<h1>Create auction</h1>
+				<button
+					type="button"
+					className="button-link button-link-icon"
+					onClick={handleBack}
+					aria-label="Go back"
+					title="Go back"
+				>
+					<span className="back-arrow" aria-hidden="true" />
+				</button>
+			</div>
 			<p>Post a new auction listing.</p>
 			<form className="form" onSubmit={handleSubmit}>
 				<label className="form-field">
