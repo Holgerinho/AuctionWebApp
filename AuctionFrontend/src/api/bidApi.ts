@@ -38,5 +38,20 @@ async function createBid(
 	return response.json() as Promise<BidResponse>
 }
 
+async function deleteBid(bidId: number, token: string): Promise<void> {
+	const response = await fetch(`${API_BASE_URL}/api/bids/${bidId}`, {
+		method: 'DELETE',
+		headers: {
+			Authorization: `Bearer ${token}`,
+		},
+	})
+
+	if (!response.ok) {
+		const text = await response.text()
+		const message = text || 'Failed to delete bid.'
+		throw new Error(message)
+	}
+}
+
 export type { BidResponse, CreateBidRequest }
-export { createBid }
+export { createBid, deleteBid }

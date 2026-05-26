@@ -267,6 +267,10 @@
   cursor: not-allowed;
 }
 
+.form-button-danger {
+  background: #b91c1c;
+}
+
 .button-link {
   display: inline-flex;
   align-items: center;

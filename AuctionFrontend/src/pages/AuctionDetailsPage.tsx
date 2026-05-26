@@ -6,7 +6,7 @@ import {
 	type Auction,
 	type Bid,
 } from '../api/auctionApi'
-import { createBid } from '../api/bidApi'
+import { createBid, deleteBid } from '../api/bidApi'
 import { useAuth } from '../context/AuthContext'
 
 function AuctionDetailsPage() {
@@ -20,6 +20,21 @@ function AuctionDetailsPage() {
 	const [bidAmount, setBidAmount] = useState('')
 	const [bidError, setBidError] = useState('')
 	const [isSubmittingBid, setIsSubmittingBid] = useState(false)
+	const [cancelError, setCancelError] = useState('')
+	const [isCancellingBid, setIsCancellingBid] = useState(false)
+	const currentUserId = useMemo(() => {
+		if (!token) {
+			return null
+		}
+		try {
+			const payload = JSON.parse(atob(token.split('.')[1])) as {
+				sub?: string
+			}
+			return payload.sub ? Number(payload.sub) : null
+		} catch {
+			return null
+		}
+	}, [token])
 
 	const loadDetails = useCallback(async () => {
 			if (!auctionId) {
@@ -45,18 +60,11 @@ function AuctionDetailsPage() {
 	}, [auctionId])
 
 	const isOwner = useMemo(() => {
-		if (!token || !auction) {
+		if (currentUserId === null || !auction) {
 			return false
 		}
-		try {
-			const payload = JSON.parse(atob(token.split('.')[1])) as {
-				sub?: string
-			}
-			return Number(payload.sub) === auction.userId
-		} catch {
-			return false
-		}
-	}, [token, auction])
+		return currentUserId === auction.userId
+	}, [currentUserId, auction])
 
 	useEffect(() => {
 		// eslint-disable-next-line react-hooks/set-state-in-effect
@@ -88,12 +96,18 @@ function AuctionDetailsPage() {
 
 	const canBid = isAuthenticated && !isOwner && !isClosed
 	const highestBid = bids.length > 0 ? bids[0] : null
+	const canCancelLatestBid =
+		!isClosed &&
+		Boolean(highestBid) &&
+		currentUserId !== null &&
+		highestBid?.userId === currentUserId
 
 	const handleBidSubmit = async (
 		event: React.FormEvent<HTMLFormElement>,
 	) => {
 		event.preventDefault()
 		setBidError('')
+		setCancelError('')
 
 		if (!token) {
 			setBidError('You must be logged in to place a bid.')
@@ -117,6 +131,31 @@ function AuctionDetailsPage() {
 			)
 		} finally {
 			setIsSubmittingBid(false)
+		}
+	}
+
+	const handleCancelLatestBid = async () => {
+		setCancelError('')
+		if (!token || !highestBid) {
+			setCancelError('Unable to cancel bid.')
+			return
+		}
+
+		const confirmed = window.confirm(
+			'Cancel your latest bid? This cannot be undone.',
+		)
+		if (!confirmed) {
+			return
+		}
+
+		setIsCancellingBid(true)
+		try {
+			await deleteBid(highestBid.id, token)
+			await loadDetails()
+		} catch (err) {
+			setCancelError(err instanceof Error ? err.message : 'Failed to cancel bid.')
+		} finally {
+			setIsCancellingBid(false)
 		}
 	}
 
@@ -171,6 +210,7 @@ function AuctionDetailsPage() {
 				</div>
 				<div>
 					<h3>{isClosed ? 'Winning bid' : 'Bid history'}</h3>
+					{cancelError ? <p className="form-error">{cancelError}</p> : null}
 					{isClosed ? (
 						highestBid ? (
 							<ul className="bid-list">
@@ -187,16 +227,28 @@ function AuctionDetailsPage() {
 					) : bids.length === 0 ? (
 						<p>No bids yet.</p>
 					) : (
-						<ul className="bid-list">
-							{bids.map((bid) => (
-								<li key={bid.id}>
-									<span>{bid.amount} kr</span>
-									<span>
-										{new Date(bid.createdAt).toLocaleString()}
-									</span>
-								</li>
-							))}
-						</ul>
+						<>
+							<ul className="bid-list">
+								{bids.map((bid) => (
+									<li key={bid.id}>
+										<span>{bid.amount} kr</span>
+										<span>
+											{new Date(bid.createdAt).toLocaleString()}
+										</span>
+									</li>
+								))}
+							</ul>
+							{canCancelLatestBid ? (
+								<button
+									type="button"
+									className="form-button form-button-danger"
+									onClick={handleCancelLatestBid}
+									disabled={isCancellingBid}
+								>
+									{isCancellingBid ? 'Cancelling...' : 'Cancel latest bid'}
+								</button>
+							) : null}
+						</>
 					)}
 				</div>
 			</div>
