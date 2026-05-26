@@ -4,6 +4,8 @@ import type { ReactNode } from 'react'
 type AuthContextValue = {
 	token: string | null
 	isAuthenticated: boolean
+	userName: string | null
+	email: string | null
 	role: string | null
 	isAdmin: boolean
 	login: (token: string) => void
@@ -23,24 +25,51 @@ function AuthProvider({ children }: AuthProviderProps) {
 		return localStorage.getItem(storageKey)
 	})
 
-	const role = useMemo(() => {
+	const tokenPayload = useMemo(() => {
 		if (!token) {
 			return null
 		}
 		try {
-			const payload = JSON.parse(atob(token.split('.')[1])) as {
+			return JSON.parse(atob(token.split('.')[1])) as {
+				email?: string
 				role?: string
 				'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'?: string
+				'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'?: string
+				unique_name?: string
 			}
-			return (
-				payload.role ??
-				payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ??
-				null
-			)
 		} catch {
 			return null
 		}
 	}, [token])
+
+	const userName = useMemo(() => {
+		if (!tokenPayload) {
+			return null
+		}
+		return (
+			tokenPayload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] ??
+			tokenPayload.unique_name ??
+			null
+		)
+	}, [tokenPayload])
+
+	const email = useMemo(() => {
+		if (!tokenPayload) {
+			return null
+		}
+		return tokenPayload.email ?? null
+	}, [tokenPayload])
+
+	const role = useMemo(() => {
+		if (!tokenPayload) {
+			return null
+		}
+		return (
+			tokenPayload.role ??
+			tokenPayload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ??
+			null
+		)
+	}, [tokenPayload])
 
 	const login = (newToken: string) => {
 		localStorage.setItem(storageKey, newToken)
@@ -56,12 +85,14 @@ function AuthProvider({ children }: AuthProviderProps) {
 		() => ({
 			token,
 			isAuthenticated: Boolean(token),
+			userName,
+			email,
 			role,
 			isAdmin: role === 'Admin',
 			login,
 			logout,
 		}),
-		[token, role],
+		[token, userName, email, role],
 	)
 
 	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

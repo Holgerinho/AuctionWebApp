@@ -71,7 +71,11 @@ namespace AuctionBackend.Controllers
             }
 
             var query = _dbContext.Auctions
-                .Where(a => a.IsActive && a.EndsAt > DateTime.UtcNow && a.Title.Contains(title))
+                .Where(a =>
+                    a.IsActive
+                    && a.EndsAt > DateTime.UtcNow
+                    && (a.Title.Contains(title) || a.Description.Contains(title))
+                )
                 .OrderBy(a => a.EndsAt)
                 .Select(a => new AuctionResponseDto
                 {
@@ -99,7 +103,7 @@ namespace AuctionBackend.Controllers
 
             if (!string.IsNullOrWhiteSpace(title))
             {
-                query = query.Where(a => a.Title.Contains(title));
+                query = query.Where(a => a.Title.Contains(title) || a.Description.Contains(title));
             }
 
             var results = await query

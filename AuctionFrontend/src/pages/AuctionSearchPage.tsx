@@ -52,7 +52,7 @@ function AuctionSearchPage() {
 				<form className="search" onSubmit={handleSearch}>
 					<input
 						className="search-input"
-						placeholder="Search by title"
+						placeholder="Search by title or description"
 						value={query}
 						onChange={(event) => setQuery(event.target.value)}
 					/>
