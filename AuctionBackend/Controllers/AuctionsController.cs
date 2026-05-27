@@ -1,14 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using AuctionBackend.Data;
 using AuctionBackend.DTOs;
-using AuctionBackend.Models;
+using AuctionBackend.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace AuctionBackend.Controllers
 {
@@ -16,133 +13,31 @@ namespace AuctionBackend.Controllers
     [Route("api/[controller]")]
     public class AuctionsController : ControllerBase
     {
-        private readonly AppDbContext _dbContext;
+        private readonly IAuctionService _auctionService;
 
-        public AuctionsController(AppDbContext dbContext)
+        public AuctionsController(IAuctionService auctionService)
         {
-            _dbContext = dbContext;
-        }
-
-        private static DateTime NormalizeToUtc(DateTime value)
-        {
-            if (value.Kind == DateTimeKind.Utc)
-            {
-                return value;
-            }
-
-            if (value.Kind == DateTimeKind.Local)
-            {
-                return value.ToUniversalTime();
-            }
-
-            return DateTime.SpecifyKind(value, DateTimeKind.Local).ToUniversalTime();
+            _auctionService = auctionService;
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<AuctionResponseDto>>> GetAuctions()
         {
-            var query = _dbContext.Auctions
-                .Where(a => a.IsActive && a.EndsAt > DateTime.UtcNow)
-                .OrderBy(a => a.EndsAt)
-                .Select(a => new AuctionResponseDto
-                {
-                    Id = a.Id,
-                    Title = a.Title,
-                    Description = a.Description,
-                    StartingPrice = a.StartingPrice,
-                    CurrentPrice = a.CurrentPrice,
-                    CurrentHighestBidUserId = a.Bids
-                        .OrderByDescending(b => b.Amount)
-                        .ThenByDescending(b => b.CreatedAt)
-                        .ThenByDescending(b => b.Id)
-                        .Select(b => (int?)b.UserId)
-                        .FirstOrDefault(),
-                    ImageUrls = a.Images.Select(i => i.Url).ToList(),
-                    StartsAt = DateTime.SpecifyKind(a.StartsAt, DateTimeKind.Utc),
-                    EndsAt = DateTime.SpecifyKind(a.EndsAt, DateTimeKind.Utc),
-                    IsActive = a.IsActive,
-                    UserId = a.UserId
-                });
-
-            var auctions = await EntityFrameworkQueryableExtensions.ToListAsync(query);
-
+            var auctions = await _auctionService.GetOpenAuctionsAsync();
             return Ok(auctions);
         }
 
         [HttpGet("search")]
         public async Task<ActionResult<IEnumerable<AuctionResponseDto>>> Search([FromQuery] string? title)
         {
-            if (string.IsNullOrWhiteSpace(title))
-            {
-                return Ok(new List<AuctionResponseDto>());
-            }
-
-            var query = _dbContext.Auctions
-                .Where(a =>
-                    a.IsActive
-                    && a.EndsAt > DateTime.UtcNow
-                    && (a.Title.Contains(title) || a.Description.Contains(title))
-                )
-                .OrderBy(a => a.EndsAt)
-                .Select(a => new AuctionResponseDto
-                {
-                    Id = a.Id,
-                    Title = a.Title,
-                    Description = a.Description,
-                    StartingPrice = a.StartingPrice,
-                    CurrentPrice = a.CurrentPrice,
-                    CurrentHighestBidUserId = a.Bids
-                        .OrderByDescending(b => b.Amount)
-                        .ThenByDescending(b => b.CreatedAt)
-                        .ThenByDescending(b => b.Id)
-                        .Select(b => (int?)b.UserId)
-                        .FirstOrDefault(),
-                    ImageUrls = a.Images.Select(i => i.Url).ToList(),
-                    StartsAt = DateTime.SpecifyKind(a.StartsAt, DateTimeKind.Utc),
-                    EndsAt = DateTime.SpecifyKind(a.EndsAt, DateTimeKind.Utc),
-                    IsActive = a.IsActive,
-                    UserId = a.UserId
-                });
-
-            var auctions = await EntityFrameworkQueryableExtensions.ToListAsync(query);
-
+            var auctions = await _auctionService.SearchOpenAuctionsAsync(title ?? string.Empty);
             return Ok(auctions);
         }
 
         [HttpGet("closed")]
         public async Task<ActionResult<IEnumerable<AuctionResponseDto>>> GetClosedAuctions([FromQuery] string? title)
         {
-            var query = _dbContext.Auctions
-                .Where(a => a.IsActive && a.EndsAt <= DateTime.UtcNow);
-
-            if (!string.IsNullOrWhiteSpace(title))
-            {
-                query = query.Where(a => a.Title.Contains(title) || a.Description.Contains(title));
-            }
-
-            var results = await query
-                .OrderByDescending(a => a.EndsAt)
-                .Select(a => new AuctionResponseDto
-                {
-                    Id = a.Id,
-                    Title = a.Title,
-                    Description = a.Description,
-                    StartingPrice = a.StartingPrice,
-                    CurrentPrice = a.CurrentPrice,
-                    CurrentHighestBidUserId = a.Bids
-                        .OrderByDescending(b => b.Amount)
-                        .ThenByDescending(b => b.CreatedAt)
-                        .ThenByDescending(b => b.Id)
-                        .Select(b => (int?)b.UserId)
-                        .FirstOrDefault(),
-                    ImageUrls = a.Images.Select(i => i.Url).ToList(),
-                    StartsAt = DateTime.SpecifyKind(a.StartsAt, DateTimeKind.Utc),
-                    EndsAt = DateTime.SpecifyKind(a.EndsAt, DateTimeKind.Utc),
-                    IsActive = a.IsActive,
-                    UserId = a.UserId
-                })
-                .ToListAsync();
-
+            var results = await _auctionService.GetClosedAuctionsAsync(title);
             return Ok(results);
         }
 
@@ -150,37 +45,12 @@ namespace AuctionBackend.Controllers
         [HttpGet("mine")]
         public async Task<ActionResult<IEnumerable<AuctionResponseDto>>> GetMyAuctions()
         {
-            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue(ClaimTypes.Name);
-            if (string.IsNullOrWhiteSpace(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+            if (!TryGetUserId(out var userId))
             {
                 return Unauthorized();
             }
 
-            var query = _dbContext.Auctions
-                .Where(a => a.UserId == userId)
-                .OrderByDescending(a => a.EndsAt)
-                .Select(a => new AuctionResponseDto
-                {
-                    Id = a.Id,
-                    Title = a.Title,
-                    Description = a.Description,
-                    StartingPrice = a.StartingPrice,
-                    CurrentPrice = a.CurrentPrice,
-                    CurrentHighestBidUserId = a.Bids
-                        .OrderByDescending(b => b.Amount)
-                        .ThenByDescending(b => b.CreatedAt)
-                        .ThenByDescending(b => b.Id)
-                        .Select(b => (int?)b.UserId)
-                        .FirstOrDefault(),
-                    ImageUrls = a.Images.Select(i => i.Url).ToList(),
-                    StartsAt = DateTime.SpecifyKind(a.StartsAt, DateTimeKind.Utc),
-                    EndsAt = DateTime.SpecifyKind(a.EndsAt, DateTimeKind.Utc),
-                    IsActive = a.IsActive,
-                    UserId = a.UserId
-                });
-
-            var auctions = await EntityFrameworkQueryableExtensions.ToListAsync(query);
-
+            var auctions = await _auctionService.GetMyAuctionsAsync(userId);
             return Ok(auctions);
         }
 
@@ -188,66 +58,19 @@ namespace AuctionBackend.Controllers
         [HttpGet("mine/bids")]
         public async Task<ActionResult<IEnumerable<AuctionResponseDto>>> GetAuctionsIBidOn()
         {
-            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue(ClaimTypes.Name);
-            if (string.IsNullOrWhiteSpace(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+            if (!TryGetUserId(out var userId))
             {
                 return Unauthorized();
             }
 
-            var query = _dbContext.Auctions
-                .Where(a => a.Bids.Any(b => b.UserId == userId))
-                .OrderByDescending(a => a.EndsAt)
-                .Select(a => new AuctionResponseDto
-                {
-                    Id = a.Id,
-                    Title = a.Title,
-                    Description = a.Description,
-                    StartingPrice = a.StartingPrice,
-                    CurrentPrice = a.CurrentPrice,
-                    CurrentHighestBidUserId = a.Bids
-                        .OrderByDescending(b => b.Amount)
-                        .ThenByDescending(b => b.CreatedAt)
-                        .ThenByDescending(b => b.Id)
-                        .Select(b => (int?)b.UserId)
-                        .FirstOrDefault(),
-                    ImageUrls = a.Images.Select(i => i.Url).ToList(),
-                    StartsAt = DateTime.SpecifyKind(a.StartsAt, DateTimeKind.Utc),
-                    EndsAt = DateTime.SpecifyKind(a.EndsAt, DateTimeKind.Utc),
-                    IsActive = a.IsActive,
-                    UserId = a.UserId
-                });
-
-            var auctions = await EntityFrameworkQueryableExtensions.ToListAsync(query);
-
+            var auctions = await _auctionService.GetAuctionsIBidOnAsync(userId);
             return Ok(auctions);
         }
 
         [HttpGet("{id:int}")]
         public async Task<ActionResult<AuctionResponseDto>> GetById(int id)
         {
-            var query = _dbContext.Auctions
-                .Where(a => a.Id == id)
-                .Select(a => new AuctionResponseDto
-                {
-                    Id = a.Id,
-                    Title = a.Title,
-                    Description = a.Description,
-                    StartingPrice = a.StartingPrice,
-                    CurrentPrice = a.CurrentPrice,
-                    CurrentHighestBidUserId = a.Bids
-                        .OrderByDescending(b => b.Amount)
-                        .ThenByDescending(b => b.CreatedAt)
-                        .ThenByDescending(b => b.Id)
-                        .Select(b => (int?)b.UserId)
-                        .FirstOrDefault(),
-                    ImageUrls = a.Images.Select(i => i.Url).ToList(),
-                    StartsAt = DateTime.SpecifyKind(a.StartsAt, DateTimeKind.Utc),
-                    EndsAt = DateTime.SpecifyKind(a.EndsAt, DateTimeKind.Utc),
-                    IsActive = a.IsActive,
-                    UserId = a.UserId
-                });
-
-            var auction = await EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(query);
+            var auction = await _auctionService.GetByIdAsync(id);
 
             if (auction == null)
             {
@@ -261,148 +84,51 @@ namespace AuctionBackend.Controllers
         [HttpPost]
         public async Task<ActionResult<AuctionResponseDto>> Create(CreateAuctionDto dto)
         {
-            var startsAtUtc = NormalizeToUtc(dto.StartsAt);
-            var endsAtUtc = NormalizeToUtc(dto.EndsAt);
-
-            if (
-                string.IsNullOrWhiteSpace(dto.Title)
-                || dto.StartingPrice <= 0
-                || startsAtUtc >= endsAtUtc
-                || endsAtUtc <= DateTime.UtcNow
-            )
-            {
-                return BadRequest("Title, starting price, valid start date, and a future end date are required.");
-            }
-
-            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue(ClaimTypes.Name);
-            if (string.IsNullOrWhiteSpace(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+            if (!TryGetUserId(out var userId))
             {
                 return Unauthorized();
             }
 
-            var auction = new Auction
+            var result = await _auctionService.CreateAsync(dto, userId);
+            if (!result.IsSuccess || result.Data == null)
             {
-                Title = dto.Title,
-                Description = dto.Description,
-                StartingPrice = dto.StartingPrice,
-                CurrentPrice = dto.StartingPrice,
-                StartsAt = startsAtUtc,
-                EndsAt = endsAtUtc,
-                UserId = userId,
-                Images = (dto.ImageUrls ?? new List<string>())
-                    .Where(url => !string.IsNullOrWhiteSpace(url))
-                    .Take(8)
-                    .Select(url => new AuctionImage { Url = url })
-                    .ToList()
-            };
+                return result.StatusCode == 400
+                    ? BadRequest(result.Error)
+                    : StatusCode(result.StatusCode, result.Error);
+            }
 
-            _dbContext.Auctions.Add(auction);
-            await _dbContext.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetById), new { id = auction.Id }, new AuctionResponseDto
-            {
-                Id = auction.Id,
-                Title = auction.Title,
-                Description = auction.Description,
-                StartingPrice = auction.StartingPrice,
-                CurrentPrice = auction.CurrentPrice,
-                CurrentHighestBidUserId = null,
-                ImageUrls = auction.Images.Select(i => i.Url).ToList(),
-                StartsAt = DateTime.SpecifyKind(auction.StartsAt, DateTimeKind.Utc),
-                EndsAt = DateTime.SpecifyKind(auction.EndsAt, DateTimeKind.Utc),
-                IsActive = auction.IsActive,
-                UserId = auction.UserId
-            });
+            return CreatedAtAction(nameof(GetById), new { id = result.Data.Id }, result.Data);
         }
 
         [Authorize]
         [HttpPut("{id:int}")]
         public async Task<ActionResult<AuctionResponseDto>> Update(int id, UpdateAuctionDto dto)
         {
-            var startsAtUtc = NormalizeToUtc(dto.StartsAt);
-            var endsAtUtc = NormalizeToUtc(dto.EndsAt);
-
-            if (
-                string.IsNullOrWhiteSpace(dto.Title)
-                || dto.StartingPrice <= 0
-                || startsAtUtc >= endsAtUtc
-                || endsAtUtc <= DateTime.UtcNow
-            )
-            {
-                return BadRequest("Title, starting price, valid start date, and a future end date are required.");
-            }
-
-            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue(ClaimTypes.Name);
-            if (string.IsNullOrWhiteSpace(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+            if (!TryGetUserId(out var userId))
             {
                 return Unauthorized();
             }
 
-            var auction = await _dbContext.Auctions.FirstOrDefaultAsync(a => a.Id == id);
-            if (auction == null)
+            var result = await _auctionService.UpdateAsync(id, dto, userId);
+            if (result.IsSuccess && result.Data != null)
             {
-                return NotFound();
+                return Ok(result.Data);
             }
 
-            if (auction.UserId != userId)
+            return result.StatusCode switch
             {
-                return Forbid();
-            }
+                400 => BadRequest(result.Error),
+                403 => Forbid(),
+                404 => NotFound(),
+                _ => StatusCode(result.StatusCode, result.Error)
+            };
+        }
 
-            var hasBids = await _dbContext.Bids.AnyAsync(b => b.AuctionId == id);
-            if (hasBids && dto.StartingPrice != auction.StartingPrice)
-            {
-                return BadRequest("Starting price cannot be changed after bids have been placed.");
-            }
-
-            auction.Title = dto.Title;
-            auction.Description = dto.Description;
-            auction.StartingPrice = dto.StartingPrice;
-            if (!hasBids)
-            {
-                auction.CurrentPrice = dto.StartingPrice;
-            }
-            auction.StartsAt = startsAtUtc;
-            auction.EndsAt = endsAtUtc;
-            auction.IsActive = dto.IsActive;
-
-            var existingImages = await _dbContext.AuctionImages
-                .Where(i => i.AuctionId == auction.Id)
-                .ToListAsync();
-            _dbContext.AuctionImages.RemoveRange(existingImages);
-
-            var newImages = (dto.ImageUrls ?? new List<string>())
-                .Where(url => !string.IsNullOrWhiteSpace(url))
-                .Take(8)
-                .Select(url => new AuctionImage { AuctionId = auction.Id, Url = url })
-                .ToList();
-            _dbContext.AuctionImages.AddRange(newImages);
-
-            await _dbContext.SaveChangesAsync();
-
-            return Ok(new AuctionResponseDto
-            {
-                Id = auction.Id,
-                Title = auction.Title,
-                Description = auction.Description,
-                StartingPrice = auction.StartingPrice,
-                CurrentPrice = auction.CurrentPrice,
-                CurrentHighestBidUserId = await _dbContext.Bids
-                    .Where(b => b.AuctionId == auction.Id)
-                    .OrderByDescending(b => b.Amount)
-                    .ThenByDescending(b => b.CreatedAt)
-                    .ThenByDescending(b => b.Id)
-                    .Select(b => (int?)b.UserId)
-                    .FirstOrDefaultAsync(),
-                ImageUrls = await _dbContext.AuctionImages
-                    .Where(i => i.AuctionId == auction.Id)
-                    .Select(i => i.Url)
-                    .ToListAsync(),
-                StartsAt = DateTime.SpecifyKind(auction.StartsAt, DateTimeKind.Utc),
-                EndsAt = DateTime.SpecifyKind(auction.EndsAt, DateTimeKind.Utc),
-                IsActive = auction.IsActive,
-                UserId = auction.UserId
-            });
+        private bool TryGetUserId(out int userId)
+        {
+            userId = default;
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue(ClaimTypes.Name);
+            return !string.IsNullOrWhiteSpace(userIdClaim) && int.TryParse(userIdClaim, out userId);
         }
 
     }

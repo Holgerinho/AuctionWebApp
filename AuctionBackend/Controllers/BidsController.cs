@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using AuctionBackend.Data;
 using AuctionBackend.DTOs;
+using AuctionBackend.Interfaces;
 using AuctionBackend.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,99 +17,50 @@ namespace AuctionBackend.Controllers
     public class BidsController : ControllerBase
     {
         private readonly AppDbContext _dbContext;
+        private readonly IAuctionService _auctionService;
 
-        public BidsController(AppDbContext dbContext)
+        public BidsController(AppDbContext dbContext, IAuctionService auctionService)
         {
             _dbContext = dbContext;
+            _auctionService = auctionService;
         }
 
         [HttpGet("auctions/{auctionId:int}/bids")]
         public async Task<ActionResult<IEnumerable<BidResponseDto>>> GetBids(int auctionId)
         {
-            var auctionExists = await _dbContext.Auctions.AnyAsync(a => a.Id == auctionId);
-            if (!auctionExists)
+            var result = await _auctionService.GetBidsAsync(auctionId);
+            if (result.IsSuccess && result.Data != null)
             {
-                return NotFound("Auction not found.");
+                return Ok(result.Data);
             }
 
-            var bids = await _dbContext.Bids
-                .Where(b => b.AuctionId == auctionId)
-                .OrderByDescending(b => b.Amount)
-                .Select(b => new BidResponseDto
-                {
-                    Id = b.Id,
-                    Amount = b.Amount,
-                    CreatedAt = b.CreatedAt,
-                    UserId = b.UserId,
-                    AuctionId = b.AuctionId
-                })
-                .ToListAsync();
-
-            return Ok(bids);
+            return result.StatusCode == 404
+                ? NotFound(result.Error)
+                : StatusCode(result.StatusCode, result.Error);
         }
 
         [Authorize]
         [HttpPost("auctions/{auctionId:int}/bids")]
         public async Task<ActionResult<BidResponseDto>> CreateBid(int auctionId, CreateBidDto dto)
         {
-            if (dto.Amount <= 0)
-            {
-                return BadRequest("Bid amount must be greater than zero.");
-            }
-
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue(ClaimTypes.Name);
             if (string.IsNullOrWhiteSpace(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
             {
                 return Unauthorized();
             }
 
-            var auction = await _dbContext.Auctions
-                .Include(a => a.Bids)
-                .FirstOrDefaultAsync(a => a.Id == auctionId);
-
-            if (auction == null)
+            var result = await _auctionService.CreateBidAsync(auctionId, dto, userId);
+            if (result.IsSuccess && result.Data != null)
             {
-                return NotFound("Auction not found.");
+                return Ok(result.Data);
             }
 
-            if (!auction.IsActive || auction.EndsAt <= DateTime.UtcNow)
+            return result.StatusCode switch
             {
-                return BadRequest("Auction is closed.");
-            }
-
-            if (auction.UserId == userId)
-            {
-                return BadRequest("You cannot bid on your own auction.");
-            }
-
-            var currentHighest = auction.Bids.Count == 0
-                ? auction.StartingPrice
-                : auction.Bids.Max(b => b.Amount);
-
-            if (dto.Amount <= currentHighest)
-            {
-                return BadRequest("Bid must be higher than the current highest bid.");
-            }
-
-            var bid = new Bid
-            {
-                Amount = dto.Amount,
-                AuctionId = auctionId,
-                UserId = userId
+                400 => BadRequest(result.Error),
+                404 => NotFound(result.Error),
+                _ => StatusCode(result.StatusCode, result.Error)
             };
-
-            auction.CurrentPrice = dto.Amount;
-            _dbContext.Bids.Add(bid);
-            await _dbContext.SaveChangesAsync();
-
-            return Ok(new BidResponseDto
-            {
-                Id = bid.Id,
-                Amount = bid.Amount,
-                CreatedAt = bid.CreatedAt,
-                UserId = bid.UserId,
-                AuctionId = bid.AuctionId
-            });
         }
 
         [Authorize]

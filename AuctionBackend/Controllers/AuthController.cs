@@ -2,8 +2,8 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using AuctionBackend.Data;
 using AuctionBackend.DTOs;
+using AuctionBackend.Interfaces;
 using AuctionBackend.Models;
-using AuctionBackend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -15,78 +15,45 @@ namespace AuctionBackend.Controllers
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
+        private readonly IAuthService _authService;
         private readonly AppDbContext _dbContext;
-        private readonly TokenService _tokenService;
         private readonly PasswordHasher<User> _passwordHasher = new();
 
-        public AuthController(AppDbContext dbContext, TokenService tokenService)
+        public AuthController(IAuthService authService, AppDbContext dbContext)
         {
+            _authService = authService;
             _dbContext = dbContext;
-            _tokenService = tokenService;
         }
 
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterDto dto)
         {
-            if (string.IsNullOrWhiteSpace(dto.UserName) || string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
+            var result = await _authService.RegisterAsync(dto);
+            if (result.IsSuccess)
             {
-                return BadRequest("Username, email, and password are required.");
+                return Ok(new { token = result.Data });
             }
 
-            var existingUser = await _dbContext.Users
-                .AnyAsync(u => u.UserName == dto.UserName || u.Email == dto.Email);
-
-            if (existingUser)
-            {
-                return BadRequest("Username or email already exists.");
-            }
-
-            var user = new User
-            {
-                UserName = dto.UserName,
-                Email = dto.Email,
-                Role = "User",
-                IsActive = true
-            };
-
-            user.PasswordHash = _passwordHasher.HashPassword(user, dto.Password);
-
-            _dbContext.Users.Add(user);
-            await _dbContext.SaveChangesAsync();
-
-            var token = _tokenService.CreateToken(user);
-            return Ok(new { token });
+            return result.StatusCode == 400
+                ? BadRequest(result.Error)
+                : StatusCode(result.StatusCode, result.Error);
         }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginDto dto)
         {
-            if (string.IsNullOrWhiteSpace(dto.UserNameOrEmail) || string.IsNullOrWhiteSpace(dto.Password))
+            var result = await _authService.LoginAsync(dto);
+            if (result.IsSuccess)
             {
-                return BadRequest("Username/email and password are required.");
+                return Ok(new { token = result.Data });
             }
 
-            var user = await _dbContext.Users
-                .FirstOrDefaultAsync(u => u.UserName == dto.UserNameOrEmail || u.Email == dto.UserNameOrEmail);
-
-            if (user == null)
+            return result.StatusCode switch
             {
-                return Unauthorized("Invalid credentials.");
-            }
-
-            if (!user.IsActive)
-            {
-                return Unauthorized("This account is inactive.");
-            }
-
-            var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, dto.Password);
-            if (result == PasswordVerificationResult.Failed)
-            {
-                return Unauthorized("Invalid credentials.");
-            }
-
-            var token = _tokenService.CreateToken(user);
-            return Ok(new { token });
+                400 => BadRequest(result.Error),
+                401 => Unauthorized(result.Error),
+                _ => StatusCode(result.StatusCode, result.Error)
+            };
         }
 
         [Authorize]

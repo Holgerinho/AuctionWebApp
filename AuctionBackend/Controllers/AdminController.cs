@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
-using AuctionBackend.Data;
 using AuctionBackend.DTOs;
+using AuctionBackend.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace AuctionBackend.Controllers
 {
@@ -15,124 +13,84 @@ namespace AuctionBackend.Controllers
     [Authorize(Roles = "Admin")]
     public class AdminController : ControllerBase
     {
-        private readonly AppDbContext _dbContext;
+        private readonly IAdminService _adminService;
 
-        public AdminController(AppDbContext dbContext)
+        public AdminController(IAdminService adminService)
         {
-            _dbContext = dbContext;
+            _adminService = adminService;
         }
 
         [HttpGet("users")]
         public async Task<ActionResult<IEnumerable<AdminUserDto>>> GetUsers()
         {
-            var users = await _dbContext.Users
-                .OrderBy(u => u.UserName)
-                .Select(u => new AdminUserDto
-                {
-                    Id = u.Id,
-                    UserName = u.UserName,
-                    Email = u.Email,
-                    Role = u.Role,
-                    IsActive = u.IsActive,
-                    CreatedAt = DateTime.SpecifyKind(u.CreatedAt, DateTimeKind.Utc)
-                })
-                .ToListAsync();
-
+            var users = await _adminService.GetUsersAsync();
             return Ok(users);
         }
 
         [HttpPut("users/{id:int}/deactivate")]
         public async Task<IActionResult> DeactivateUser(int id)
         {
-            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == id);
-            if (user == null)
+            var result = await _adminService.DeactivateUserAsync(id);
+            if (result.IsSuccess)
             {
-                return NotFound("User not found.");
+                return NoContent();
             }
 
-            if (user.Role == "Admin")
+            return result.StatusCode switch
             {
-                return BadRequest("Admin users cannot be deactivated.");
-            }
-
-            user.IsActive = false;
-
-            var userAuctions = await _dbContext.Auctions
-                .Where(a => a.UserId == user.Id && a.IsActive)
-                .ToListAsync();
-
-            foreach (var auction in userAuctions)
-            {
-                auction.IsActive = false;
-            }
-
-            await _dbContext.SaveChangesAsync();
-            return NoContent();
+                400 => BadRequest(result.Error),
+                404 => NotFound(result.Error),
+                _ => StatusCode(result.StatusCode, result.Error)
+            };
         }
 
         [HttpPut("users/{id:int}/activate")]
         public async Task<IActionResult> ActivateUser(int id)
         {
-            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == id);
-            if (user == null)
+            var result = await _adminService.ActivateUserAsync(id);
+            if (result.IsSuccess)
             {
-                return NotFound("User not found.");
+                return NoContent();
             }
 
-            user.IsActive = true;
-            await _dbContext.SaveChangesAsync();
-            return NoContent();
+            return result.StatusCode == 404
+                ? NotFound(result.Error)
+                : StatusCode(result.StatusCode, result.Error);
         }
 
         [HttpGet("auctions")]
         public async Task<ActionResult<IEnumerable<AdminAuctionDto>>> GetAuctions()
         {
-            var auctions = await _dbContext.Auctions
-                .OrderByDescending(a => a.EndsAt)
-                .Select(a => new AdminAuctionDto
-                {
-                    Id = a.Id,
-                    Title = a.Title,
-                    Description = a.Description,
-                    StartingPrice = a.StartingPrice,
-                    CurrentPrice = a.CurrentPrice,
-                    StartsAt = DateTime.SpecifyKind(a.StartsAt, DateTimeKind.Utc),
-                    EndsAt = DateTime.SpecifyKind(a.EndsAt, DateTimeKind.Utc),
-                    IsActive = a.IsActive,
-                    UserId = a.UserId,
-                    OwnerUserName = a.User.UserName
-                })
-                .ToListAsync();
-
+            var auctions = await _adminService.GetAuctionsAsync();
             return Ok(auctions);
         }
 
         [HttpPut("auctions/{id:int}/deactivate")]
         public async Task<IActionResult> DeactivateAuction(int id)
         {
-            var auction = await _dbContext.Auctions.FirstOrDefaultAsync(a => a.Id == id);
-            if (auction == null)
+            var result = await _adminService.DeactivateAuctionAsync(id);
+            if (result.IsSuccess)
             {
-                return NotFound("Auction not found.");
+                return NoContent();
             }
 
-            auction.IsActive = false;
-            await _dbContext.SaveChangesAsync();
-            return NoContent();
+            return result.StatusCode == 404
+                ? NotFound(result.Error)
+                : StatusCode(result.StatusCode, result.Error);
         }
 
         [HttpPut("auctions/{id:int}/activate")]
         public async Task<IActionResult> ActivateAuction(int id)
         {
-            var auction = await _dbContext.Auctions.FirstOrDefaultAsync(a => a.Id == id);
-            if (auction == null)
+            var result = await _adminService.ActivateAuctionAsync(id);
+            if (result.IsSuccess)
             {
-                return NotFound("Auction not found.");
+                return NoContent();
             }
 
-            auction.IsActive = true;
-            await _dbContext.SaveChangesAsync();
-            return NoContent();
+            return result.StatusCode == 404
+                ? NotFound(result.Error)
+                : StatusCode(result.StatusCode, result.Error);
         }
     }
 }
