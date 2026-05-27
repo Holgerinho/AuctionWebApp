@@ -13,5 +13,6 @@ namespace AuctionBackend.DTOs
         public DateTime EndsAt { get; set; }
         public bool IsActive { get; set; }
         public int UserId { get; set; }
+        public string OwnerUserName { get; set; } = string.Empty;
     }
 }

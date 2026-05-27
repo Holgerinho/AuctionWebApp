@@ -22,6 +22,7 @@ type AdminAuction = {
 	endsAt: string
 	isActive: boolean
 	userId: number
+	ownerUserName: string
 }
 
 async function request(path: string, token: string, options: RequestInit = {}) {
@@ -55,6 +56,10 @@ async function deactivateUser(id: number, token: string): Promise<void> {
 	await request(`/api/admin/users/${id}/deactivate`, token, { method: 'PUT' })
 }
 
+async function activateUser(id: number, token: string): Promise<void> {
+	await request(`/api/admin/users/${id}/activate`, token, { method: 'PUT' })
+}
+
 async function getAdminAuctions(token: string): Promise<AdminAuction[]> {
 	const data = await request('/api/admin/auctions', token)
 	return data as AdminAuction[]
@@ -64,5 +69,16 @@ async function deactivateAuction(id: number, token: string): Promise<void> {
 	await request(`/api/admin/auctions/${id}/deactivate`, token, { method: 'PUT' })
 }
 
+async function activateAuction(id: number, token: string): Promise<void> {
+	await request(`/api/admin/auctions/${id}/activate`, token, { method: 'PUT' })
+}
+
 export type { AdminAuction, AdminUser }
-export { deactivateAuction, deactivateUser, getAdminAuctions, getAdminUsers }
+export {
+	activateAuction,
+	activateUser,
+	deactivateAuction,
+	deactivateUser,
+	getAdminAuctions,
+	getAdminUsers,
+}

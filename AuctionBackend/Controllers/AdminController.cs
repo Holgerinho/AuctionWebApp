@@ -70,6 +70,20 @@ namespace AuctionBackend.Controllers
             return NoContent();
         }
 
+        [HttpPut("users/{id:int}/activate")]
+        public async Task<IActionResult> ActivateUser(int id)
+        {
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == id);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            user.IsActive = true;
+            await _dbContext.SaveChangesAsync();
+            return NoContent();
+        }
+
         [HttpGet("auctions")]
         public async Task<ActionResult<IEnumerable<AdminAuctionDto>>> GetAuctions()
         {
@@ -85,7 +99,8 @@ namespace AuctionBackend.Controllers
                     StartsAt = DateTime.SpecifyKind(a.StartsAt, DateTimeKind.Utc),
                     EndsAt = DateTime.SpecifyKind(a.EndsAt, DateTimeKind.Utc),
                     IsActive = a.IsActive,
-                    UserId = a.UserId
+                    UserId = a.UserId,
+                    OwnerUserName = a.User.UserName
                 })
                 .ToListAsync();
 
@@ -102,6 +117,20 @@ namespace AuctionBackend.Controllers
             }
 
             auction.IsActive = false;
+            await _dbContext.SaveChangesAsync();
+            return NoContent();
+        }
+
+        [HttpPut("auctions/{id:int}/activate")]
+        public async Task<IActionResult> ActivateAuction(int id)
+        {
+            var auction = await _dbContext.Auctions.FirstOrDefaultAsync(a => a.Id == id);
+            if (auction == null)
+            {
+                return NotFound("Auction not found.");
+            }
+
+            auction.IsActive = true;
             await _dbContext.SaveChangesAsync();
             return NoContent();
         }

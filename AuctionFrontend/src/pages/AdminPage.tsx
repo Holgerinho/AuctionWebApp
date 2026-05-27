@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
+	activateAuction,
+	activateUser,
 	deactivateAuction,
 	deactivateUser,
 	getAdminAuctions,
@@ -96,6 +98,18 @@ function AdminPage() {
 		}
 	}
 
+	const handleActivateUser = async (userId: number) => {
+		if (!token) {
+			return
+		}
+		try {
+			await activateUser(userId, token)
+			await loadAdminData()
+		} catch (err) {
+			setError(err instanceof Error ? err.message : 'Failed to activate user.')
+		}
+	}
+
 	const handleDeactivateAuction = async (auctionId: number) => {
 		if (!token) {
 			return
@@ -106,6 +120,20 @@ function AdminPage() {
 		} catch (err) {
 			setError(
 				err instanceof Error ? err.message : 'Failed to deactivate auction.',
+			)
+		}
+	}
+
+	const handleActivateAuction = async (auctionId: number) => {
+		if (!token) {
+			return
+		}
+		try {
+			await activateAuction(auctionId, token)
+			await loadAdminData()
+		} catch (err) {
+			setError(
+				err instanceof Error ? err.message : 'Failed to activate auction.',
 			)
 		}
 	}
@@ -151,14 +179,24 @@ function AdminPage() {
 										{user.isActive ? 'Active' : 'Inactive'}
 									</p>
 								</div>
-								{user.isActive && user.role !== 'Admin' ? (
-									<button
-										type="button"
-										className="form-button form-button-danger"
-										onClick={() => handleDeactivateUser(user.id)}
-									>
-										Deactivate
-									</button>
+								{user.role !== 'Admin' ? (
+									user.isActive ? (
+										<button
+											type="button"
+											className="form-button form-button-danger"
+											onClick={() => handleDeactivateUser(user.id)}
+										>
+											Deactivate
+										</button>
+									) : (
+										<button
+											type="button"
+											className="form-button"
+											onClick={() => handleActivateUser(user.id)}
+										>
+											Activate
+										</button>
+									)
 								) : null}
 							</li>
 						))}
@@ -187,7 +225,7 @@ function AdminPage() {
 								<div>
 									<strong>{auction.title}</strong>
 									<p>
-										Owner #{auction.userId} |{' '}
+										Owner {auction.ownerUserName} (#{auction.userId}) |{' '}
 										{auction.isActive ? 'Active' : 'Inactive'}
 									</p>
 								</div>
@@ -199,7 +237,15 @@ function AdminPage() {
 									>
 										Deactivate
 									</button>
-								) : null}
+								) : (
+									<button
+										type="button"
+										className="form-button"
+										onClick={() => handleActivateAuction(auction.id)}
+									>
+										Activate
+									</button>
+								)}
 							</li>
 						))}
 					</ul>
